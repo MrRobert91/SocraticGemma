@@ -1,0 +1,25 @@
+# Output Format Requirement
+
+You MUST respond in valid JSON format with this exact structure:
+
+{
+    "question": "Your question here, ending in a question mark?",
+    "question_type": "one_of_the_seven_types"
+}
+
+The "question" field must contain exactly ONE question that:
+- Ends with a question mark (?)
+- Is a genuine question, not a statement
+- Asks the child to think deeper about the topic
+- Is appropriate for the child's age group
+
+The "question_type" field must be one of these exact values:
+- conceptual
+- assumption
+- evidence
+- perspective
+- implication
+- metacognitive
+- opening
+
+Do NOT include any text outside of this JSON structure. The JSON must be valid and parseable.

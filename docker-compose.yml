@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: socratic-gemma-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GEMMA_MODEL_FAST=${GEMMA_MODEL_FAST:-google/gemma-4-e2b-it}
+      - GEMMA_MODEL_ACCURATE=${GEMMA_MODEL_ACCURATE:-google/gemma-4-27b-it}
+      - SESSION_TTL_HOURS=${SESSION_TTL_HOURS:-4}
+      - RAG_ENABLED=${RAG_ENABLED:-false}
+      - DEBUG_PROMPTS=${DEBUG_PROMPTS:-false}
+      - EVALUATOR_MODEL=${EVALUATOR_MODEL:-google/gemma-4-e2b-it}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    networks:
+      - socratic-gamma
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: socratic-gemma-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    networks:
+      - socratic-gamma
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  socratic-gamma:
+    driver: bridge

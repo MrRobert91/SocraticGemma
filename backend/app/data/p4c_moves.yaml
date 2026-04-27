@@ -1,0 +1,165 @@
+# P4C Moves - Philosophy for Children Question Moves
+# Curated collection of Socratic question templates in Spanish
+# Covering all 7 question types: conceptual, assumption, evidence, perspective, implication, metacognitive, opening
+
+moves:
+  # === CONCEPTUAL (Clarificar conceptos y significados) ===
+  - id: clarify_concept
+    question_type: conceptual
+    move_text: "¿Qué quieres decir con '{concept}'? ¿Podrías explicarlo de otra forma?"
+    example_context: "Cuando el niño usa una palabra vaga o abstracta que necesita más precisión"
+    age_range: "all"
+    source: "Lipman"
+
+  - id: define_term
+    question_type: conceptual
+    move_text: "¿Cómo definirías '{concept}'? ¿Qué lo hace diferente de otras cosas?"
+    example_context: "Para explorar el significado profundo de un término clave en la discusión"
+    age_range: "9-12"
+    source: "SAPERE"
+
+  - id: example_clarification
+    question_type: conceptual
+    move_text: "Puedes darme un ejemplo de '{concept}' para entenderme mejor lo que dices?"
+    example_context: "Cuando se necesita un ejemplo concreto para entender una idea abstracta"
+    age_range: "6-8"
+    source: "Lipman"
+
+  # === ASSUMPTION (Examinar suposiciones) ===
+  - id: question_assumption
+    question_type: assumption
+    move_text: "¿Qué estás asumiendo cuando dices eso? ¿Es siempre verdadero?"
+    example_context: "Cuando el niño hace una afirmación que podría tener premisas ocultas"
+    age_range: "9-12"
+    source: "Lipman"
+
+  - id: alternative_assumption
+    question_type: assumption
+    move_text: "¿Qué pasaría si la gente no asumiera eso? ¿Cambiaría algo?"
+    example_context: "Para explorar qué pasa cuando desafiamos una suposición común"
+    age_range: "13-16"
+    source: "Sutcliffe"
+
+  - id: hidden_premise
+    question_type: assumption
+    move_text: "Antes de seguir, cuéntame ¿qué necesitas creer para pensar eso?"
+    example_context: "Para hacer visible la base oculta del razonamiento del niño"
+    age_range: "9-12"
+    source: "SAPERE"
+
+  # === EVIDENCE (Evaluar evidencia y razones) ===
+  - id: ask_for_evidence
+    question_type: evidence
+    move_text: "¿Qué te hace pensar eso? ¿Tienes alguna razón o prueba?"
+    example_context: "Cuando el niño afirma algo sin proporcionar razones claras"
+    age_range: "all"
+    source: "Lipman"
+
+  - id: evaluate_source
+    question_type: evidence
+    move_text: "¿De dónde sacaste esa información? ¿Es una fuente confiable?"
+    example_context: "Para reflexionar sobre el origen y la confiabilidad de la información"
+    age_range: "9-12"
+    source: "Sutcliffe"
+
+  - id: evidence_weakness
+    question_type: evidence
+    move_text: "¿Qué evidencia encontraste en contra de tu propia idea? ¿Hay algo que la contradiga?"
+    example_context: "Para fomentar la autocrítica y considerar evidencia contraria"
+    age_range: "13-16"
+    source: "SAPERE"
+
+  # === PERSPECTIVE (Considerar otras perspectivas) ===
+  - id: other_person_view
+    question_type: perspective
+    move_text: "¿Qué crees que pensaría otra persona sobre esto? ¿Por qué?"
+    example_context: "Para desarrollar empatía y considerar puntos de vista diferentes"
+    age_range: "all"
+    source: "Lipman"
+
+  - id: opposite_view
+    question_type: perspective
+    move_text: "¿Cómo le explicaría esto a alguien que piensa exactamente lo contrario?"
+    example_context: "Para entender profundamente una posición desde su opuesto"
+    age_range: "9-12"
+    source: "Sutcliffe"
+
+  - id: cultural_perspective
+    question_type: perspective
+    move_text: "¿Crees que todas las personas pensarían igual sobre esto? ¿Por qué sí o por qué no?"
+    example_context: "Para explorar cómo diferentes culturas o contextos afectan las opiniones"
+    age_range: "13-16"
+    source: "SAPERE"
+
+  # === IMPLICATION (Explorar implicaciones y consecuencias) ===
+  - id: what_if_scenario
+    question_type: implication
+    move_text: "¿Qué pasaría si todos pensaran eso? ¿Cómo sería el mundo?"
+    example_context: "Para explorar las consecuencias amplias de una idea o acción"
+    age_range: "all"
+    source: "Lipman"
+
+  - id: logical_consequence
+    question_type: implication
+    move_text: "Si eso es verdad, ¿entonces también sería verdad que...?"
+    example_context: "Para seguir las implicaciones lógicas de una afirmación"
+    age_range: "9-12"
+    source: "Sutcliffe"
+
+  - id: consequences_chain
+    question_type: implication
+    move_text: "¿Y después de eso, qué pasaría? ¿Vamos más allá en las consecuencias?"
+    example_context: "Para crear una cadena de consecuencias y explorar el futuro"
+    age_range: "13-16"
+    source: "SAPERE"
+
+  # === METACOGNITIVE (Reflexionar sobre el pensamiento) ===
+  - id: thinking_process
+    question_type: metacognitive
+    move_text: "¿Cómo llegaste a esa conclusión? Cuéntame tu proceso de pensamiento."
+    example_context: "Para que el niño reflexione sobre cómo piensa, no solo qué piensa"
+    age_range: "9-12"
+    source: "Lipman"
+
+  - id: question_own_question
+    question_type: metacognitive
+    move_text: "Esa es una pregunta interesante... ¿Tú mismo podrías responderla? ¿Cómo lo harías?"
+    example_context: "Para empoderar al niño a responder sus propias preguntas"
+    age_range: "all"
+    source: "Sutcliffe"
+
+  - id: explore_confusion
+    question_type: metacognitive
+    move_text: "Me estoy confundiendo un poco. ¿Podemos detenernos aquí y pensar juntos sobre esto?"
+    example_context: "Para modelar que la confusión es parte normal del pensamiento filosófico"
+    age_range: "6-8"
+    source: "Lipman"
+
+  # === OPENING (Abrir nuevas posibilidades) ===
+  - id: expand_question
+    question_type: opening
+    move_text: "Eso me hace pensar en algo diferente... ¿alguna vez te has preguntado por qué...?"
+    example_context: "Para abrir nuevas líneas de inquiry y explorar conexiones inesperadas"
+    age_range: "all"
+    source: "Lipman"
+
+  - id: connection_question
+    question_type: opening
+    move_text: "¿Cómo se relaciona esto con lo que hablamos antes? ¿Ves alguna conexión?"
+    example_context: "Para crear vínculos entre diferentes partes de la conversación"
+    age_range: "9-12"
+    source: "Sutcliffe"
+
+  - id: deeper_mystery
+    question_type: opening
+    move_text: "Cuanto más hablamos, más me parece que hay algo más profundo aquí. ¿Qué crees que es?"
+    example_context: "Para señalar que hay niveles más profundos de significado por explorar"
+    age_range: "13-16"
+    source: "SAPERE"
+
+  - id: wonder_question
+    question_type: opening
+    move_text: "Me gustaría pensar más sobre esto... ¿qué te gustaría explorar más?"
+    example_context: "Para dar agencia al niño sobre la dirección de la conversación"
+    age_range: "all"
+    source: "Lipman"
