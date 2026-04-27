@@ -134,6 +134,7 @@ async def compare_responses(request: CompareRequest) -> CompareResponse:
                 "overall": baseline_scores.overall,
                 "weighted_overall": baseline_weighted
             },
+            "prompt_used": baseline_prompt,
             "forbidden_behaviors": baseline_forbidden
         },
         p4c_response={
@@ -147,6 +148,7 @@ async def compare_responses(request: CompareRequest) -> CompareResponse:
                 "overall": p4c_scores.overall,
                 "weighted_overall": p4c_weighted
             },
+            "prompt_used": p4c_prompt,
             "forbidden_behaviors": p4c_forbidden
         },
         improvement_pct=improvement_pct

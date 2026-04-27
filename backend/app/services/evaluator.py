@@ -78,7 +78,8 @@ class Evaluator:
         Args:
             gemma_client: Optional Gemma client instance. Uses global if not provided.
         """
-        self.gemma = gemma_client or gemma_client
+        from .gemma_client import gemma_client as _gemma_client
+        self.gemma = gemma_client if gemma_client is not None else _gemma_client
 
     async def evaluate(
         self,

@@ -74,7 +74,8 @@ class RAGService:
         Args:
             settings: Application settings (uses global settings if not provided)
         """
-        self._settings = settings or settings
+        from ..config import settings as _settings
+        self._settings = settings if settings is not None else _settings
         self._client = None
         self._collection = None
         self._indexed = False

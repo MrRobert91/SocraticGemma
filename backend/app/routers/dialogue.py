@@ -19,7 +19,7 @@ router = APIRouter(prefix="/sessions", tags=["dialogue"])
 
 class TurnRequest(BaseModel):
     """Request body for processing a dialogue turn."""
-    text: str = Field(..., description="The child's input/response")
+    child_input: str = Field(..., description="The child's input/response")
 
 
 @router.post(
@@ -50,7 +50,7 @@ async def process_turn(
     Raises:
         HTTPException: If session not found.
     """
-    child_input = request.text
+    child_input = request.child_input
     
     # Verify session exists
     session = session_store.get_session(session_id)

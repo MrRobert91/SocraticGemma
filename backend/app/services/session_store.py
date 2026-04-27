@@ -5,6 +5,7 @@ import time
 from typing import Optional
 
 from ..models import Session
+from ..config import settings
 
 
 class SessionStore:
@@ -14,12 +15,14 @@ class SessionStore:
     All operations are protected by a threading lock for thread safety.
     """
 
-    def __init__(self, session_ttl_hours: int = 4):
+    def __init__(self, session_ttl_hours: int = None):
         """Initialize the session store.
         
         Args:
-            session_ttl_hours: Time-to-live for sessions in hours. Default is 4.
+            session_ttl_hours: Time-to-live for sessions in hours. Default from settings.
         """
+        if session_ttl_hours is None:
+            session_ttl_hours = settings.session_ttl_hours
         self._sessions: dict[str, Session] = {}
         self._lock = threading.Lock()
         self._ttl_seconds = session_ttl_hours * 3600
