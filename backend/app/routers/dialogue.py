@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from ..services.session_store import session_store
@@ -16,6 +17,11 @@ from ..services.socratic_engine import SocraticEngine
 router = APIRouter(prefix="/sessions", tags=["dialogue"])
 
 
+class TurnRequest(BaseModel):
+    """Request body for processing a dialogue turn."""
+    text: str = Field(..., description="The child's input/response")
+
+
 @router.post(
     "/{session_id}/turns",
     summary="Process a dialogue turn with SSE streaming",
@@ -23,7 +29,7 @@ router = APIRouter(prefix="/sessions", tags=["dialogue"])
 )
 async def process_turn(
     session_id: str,
-    child_input: Annotated[str, {"description": "The child's input/response"}]
+    request: TurnRequest
 ) -> StreamingResponse:
     """Process a turn in the Socratic dialogue with SSE streaming.
     
@@ -36,7 +42,7 @@ async def process_turn(
     
     Args:
         session_id: The unique session identifier.
-        child_input: The child's input or response.
+        request: TurnRequest containing the child's input text.
         
     Returns:
         StreamingResponse with SSE events.
@@ -44,6 +50,8 @@ async def process_turn(
     Raises:
         HTTPException: If session not found.
     """
+    child_input = request.text
+    
     # Verify session exists
     session = session_store.get_session(session_id)
     if session is None:

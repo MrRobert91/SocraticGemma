@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 import time
 from typing import Any, AsyncGenerator, Optional
 
@@ -82,28 +83,7 @@ class SocraticEngine:
     ) -> AsyncGenerator[dict, None]:
         """Process a single turn in the Socratic dialogue.
         
-        Steps:
-        1. Get session from store
-        2. Build prompt (with RAG if available)
-        3. Stream via GemmaClient
-        4. Evaluate in parallel
-        5. Append turn to session
-        6. Save session
-        
-        Args:
-            session_id: The ID of the session to process the turn in.
-            child_input: The child's input/response.
-            session_store: Session store instance.
-            prompt_builder: PromptBuilder instance.
-            gemma_client: GemmaClient instance.
-            evaluator: Evaluator instance.
-            rag_service: Optional RAG service for context augmentation.
-            
-        Yields:
-            SSE events as dicts:
-            - {"type": "thinking", "trace": ...} - Thinking content chunks
-            - {"type": "token", "text": ...} - Response token chunks
-            - {"type": "complete", "turn": {...}, "scores": {...}} - Final turn with evaluation
+        Yields SSE events: thinking, token, complete, error.
         """
         # Step 1: Get session
         session = session_store.get_session(session_id)
@@ -115,25 +95,34 @@ class SocraticEngine:
         current_phase = self._get_phase(len(session.turns))
         
         # Step 2: Build prompt with RAG if available
-        rag_context = ""
         rag_moves_used = []
-        if rag_service is not None:
+        if rag_service is not None and rag_service.is_available():
             try:
-                rag_context, rag_moves_used = await rag_service.get_context(
-                    child_input=child_input,
-                    session=session,
-                    phase=current_phase
+                rag_results = rag_service.search(
+                    query_text=child_input,
+                    age_range=session.age_group,
+                    top_k=3
                 )
+                if rag_results:
+                    rag_moves_used = [move.move_text for move in rag_results]
             except Exception:
-                rag_context = ""
                 rag_moves_used = []
         
-        # Build the prompt
-        prompt = prompt_builder.build_turn_prompt(
-            session=session,
+        # Build the prompt - map to PromptBuilder.build_prompt signature
+        last_question_type = None
+        recent_types = []
+        if session.turns:
+            last_question_type = session.turns[-1].question_type
+            recent_types = [t.question_type for t in session.turns[-7:]]
+        
+        prompt = prompt_builder.build_prompt(
+            session_history=session.turns,
             child_input=child_input,
-            phase=current_phase,
-            rag_context=rag_context
+            age_group=session.age_group,
+            last_question_type=last_question_type,
+            recent_types=recent_types,
+            rag_moves=rag_moves_used if rag_moves_used else None,
+            stimulus=session.stimulus
         )
         
         # Get model name based on session settings
@@ -145,45 +134,49 @@ class SocraticEngine:
         # Step 3: Stream via GemmaClient
         thinking_buffer = ""
         content_buffer = ""
+        in_thinking = False
         
         async for chunk in gemma_client.generate(
             prompt=prompt,
             model_name=model_name,
             max_tokens=500,
             streaming=True,
-            thinking_mode=session.thinking_mode if hasattr(session, 'thinking_mode') else True
+            thinking_mode=False  # thinking_mode handled by tag detection, not API
         ):
             if chunk:
-                # Check if this looks like thinking content (starts with <think> or similar)
-                if "<think>" in chunk or thinking_buffer:
+                if "<|start_of_thought|>" in chunk or in_thinking:
+                    in_thinking = True
                     thinking_buffer += chunk
+                    if "<|end_of_thought|>" in chunk:
+                        in_thinking = False
+                        # Filter out the thinking tags from buffer
+                        thinking_buffer = re.sub(
+                            r'<\|start_of_thought\|>(.*?)<\|end_of_thought\|>',
+                            r'\1',
+                            thinking_buffer,
+                            flags=re.DOTALL
+                        )
                     yield {"type": "thinking", "trace": chunk}
                 else:
                     content_buffer += chunk
                     yield {"type": "token", "text": chunk}
         
-        # Extract thinking trace from the full thinking buffer
-        thinking_trace = ""
-        # Extract thinking trace from <think> tags
-        think_start = "<think>"
-        think_end = "</think>"
-        think_match = re.search(
-            f"{think_start}(.*?){think_end}",
-            thinking_buffer,
-            re.DOTALL
-        )
-        if think_match:
-            thinking_trace = think_match.group(1).strip()
+        # Clean the thinking trace (remove tags if still present)
+        thinking_trace = re.sub(
+            r'<\|start_of_thought\|>|<\|end_of_thought\|>',
+            '',
+            thinking_buffer
+        ).strip()
         
-        # Clean content - remove any <think> blocks from the content
+        # Clean any remaining thought tags from content
         final_content = re.sub(
-            f"{think_start}.*?{think_end}",
-            "",
+            r'<\|start_of_thought\|>.*?<\|end_of_thought\|>',
+            '',
             content_buffer,
             flags=re.DOTALL
-        )
+        ).strip()
         
-        # Step 4: Evaluate in parallel (don't block the response)
+        # Step 4: Evaluate in parallel
         eval_task = asyncio.create_task(
             evaluator.evaluate(
                 child_input=child_input,
@@ -192,10 +185,9 @@ class SocraticEngine:
             )
         )
         
-        # Wait for evaluation
         eval_scores, forbidden_behaviors = await eval_task
         
-        # Step 5: Determine question type from content (simple heuristic)
+        # Step 5: Detect question type from content
         question_type = self._detect_question_type(final_content)
         
         # Create turn object
@@ -210,23 +202,12 @@ class SocraticEngine:
             timestamp=time.time()
         )
         
-        # Step 6: Append turn and save
-        session.turns.append(turn)
+        # Step 6: Append turn (only once!)
+        session_store.append_turn(session_id, turn)
         
         # Update phase markers
-        if current_phase == "stimulus":
-            session.phases["stimulus"] = True
-        elif current_phase == "questions":
-            session.phases["questions"] = True
-        elif current_phase == "agenda":
-            session.phases["agenda"] = True
-        elif current_phase == "inquiry":
-            session.phases["inquiry"] = True
-        elif current_phase == "synthesis":
-            session.phases["synthesis"] = True
-        
-        # Save session
-        session_store.append_turn(session_id, turn)
+        if current_phase in session.phases:
+            session.phases[current_phase] = True
         
         # Step 7: Yield completion event
         yield {
@@ -261,75 +242,29 @@ class SocraticEngine:
         }
 
     def _detect_question_type(self, content: str) -> str:
-        """Detect the question type from response content.
-        
-        Uses keyword and pattern matching to identify which of the
-        7 P4C question types the response most aligns with.
-        
-        Args:
-            content: The response content to analyze.
-            
-        Returns:
-            Question type string (conceptual, assumption, evidence, 
-            perspective, implication, metacognitive, opening, or statement).
-        """
+        """Detect the question type from response content using keywords."""
         content_lower = content.lower()
         
-        # Conceptual: exploring meaning of concepts
-        if any(phrase in content_lower for phrase in [
-            "what does it mean", "what is", "difference between",
-            "do you think", "concept of", "meaning of"
-        ]):
-            return "conceptual"
+        type_keywords = {
+            "conceptual": ["what does", "what is", "difference between", "concept of", "meaning of"],
+            "assumption": ["assuming", "what if we assumed", "what must be true", "taking for granted"],
+            "evidence": ["why do you think", "what evidence", "how do you know", "what makes you say"],
+            "perspective": ["how might someone", "different view", "from another perspective", "disagree"],
+            "implication": ["what if that were true", "what would happen", "implications", "consequences"],
+            "metacognitive": ["what kind of question", "how are we thinking", "thinking about thinking"],
+            "opening": ["what are you curious", "wonder about", "what questions does", "what if you"],
+        }
         
-        # Assumption: examining presuppositions
-        if any(phrase in content_lower for phrase in [
-            "assuming", "what if we assumed", "what must be true",
-            "what are we taking for granted", "presuppose"
-        ]):
-            return "assumption"
+        for qtype, keywords in type_keywords.items():
+            if any(kw in content_lower for kw in keywords):
+                return qtype
         
-        # Evidence: asking about reasons and evidence
-        if any(phrase in content_lower for phrase in [
-            "why do you think", "what evidence", "how do you know",
-            "what makes you say", "reason for", "prove"
-        ]):
-            return "evidence"
-        
-        # Perspective: exploring different viewpoints
-        if any(phrase in content_lower for phrase in [
-            "how might someone", "what would a", "different view",
-            "what if you were", "from another perspective", "disagree"
-        ]):
-            return "perspective"
-        
-        # Implication: exploring consequences
-        if any(phrase in content_lower for phrase in [
-            "what if that were true", "what would happen if",
-            "what follows", "implications", "consequences"
-        ]):
-            return "implication"
-        
-        # Metacognitive: thinking about thinking
-        if any(phrase in content_lower for phrase in [
-            "what kind of question", "how are we thinking",
-            "is this answerable", "thinking about thinking"
-        ]):
-            return "metacognitive"
-        
-        # Opening: opening up new inquiry
-        if any(phrase in content_lower for phrase in [
-            "what are you curious", "what else does this", "wonder about",
-            "what questions does this", "explore"
-        ]):
-            return "opening"
-        
-        # Default to statement if no clear question type
+        # Default to statement if no question mark
         if "?" not in content:
             return "statement"
         
-        return "conceptual"  # Default fallback
+        return "conceptual"
 
 
-# Global engine instance
-socratic_engine = SocraticEngine(session_store=None)
+# Note: Global engine instance is deferred to avoid circular imports.
+# Create SocraticEngine(session_store=session_store, ...) at runtime.

@@ -8,6 +8,8 @@ services:
     container_name: socratic-gemma-backend
     ports:
       - "8000:8000"
+    env_file:
+      - ../.env
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - GEMMA_MODEL_FAST=${GEMMA_MODEL_FAST:-google/gemma-4-e2b-it}
@@ -34,8 +36,10 @@ services:
     container_name: socratic-gemma-frontend
     ports:
       - "3000:3000"
+    env_file:
+      - ../.env
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     networks:
       - socratic-gamma
     depends_on:

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from ..schemas import CompareResponse
 from ..services.session_store import session_store
+from ..services.prompt_builder import prompt_builder
 from ..services.gemma_client import gemma_client
 from ..services.evaluator import evaluator
 from ..config import settings
@@ -22,30 +23,6 @@ class CompareRequest(BaseModel):
     age_group: str = Field(description="Age group: '6-8', '9-12', or '13-16'")
     model_size: str = Field(default="fast", description="Model size: 'fast' or 'accurate'")
     thinking_mode: bool = Field(default=True, description="Enable thinking mode")
-
-
-# Simple baseline prompt (non-Socratic)
-BASELINE_PROMPT = """You are a helpful assistant for children. 
-A {age}-year-old child says: "{input}"
-
-Provide a helpful, clear response appropriate for their age.
-"""
-
-
-# P4C system prompt
-P4C_PROMPT = """You are a Philosophy for Children (P4C) facilitator working with children. 
-Your role is to guide philosophical inquiry through dialogue, never by giving direct answers.
-
-Core principles:
-- NEVER give direct answers - always respond with another question
-- Guide children to think for themselves
-- Embrace puzzlement and uncertainty
-- Build on children's natural curiosity
-
-A {age}-year-old child says: "{input}"
-
-Respond as a Socratic facilitator would, asking questions that deepen thinking.
-"""
 
 
 @router.post(
@@ -66,13 +43,23 @@ async def compare_responses(request: CompareRequest) -> CompareResponse:
     Returns:
         CompareResponse with both responses and improvement percentage.
     """
-    # Determine age description
-    age_map = {"6-8": "6-8 year old", "9-12": "9-12 year old", "13-16": "13-16 year old"}
-    age_desc = age_map.get(request.age_group, request.age_group)
+    # Build prompts using PromptBuilder for consistency
+    # Baseline prompt - non-Socratic helpful assistant style
+    baseline_prompt = prompt_builder.build_baseline_prompt(
+        age_group=request.age_group,
+        child_input=request.child_input
+    )
     
-    # Build prompts
-    baseline_prompt = BASELINE_PROMPT.format(age=age_desc, input=request.child_input)
-    p4c_prompt = P4C_PROMPT.format(age=age_desc, input=request.child_input)
+    # P4C prompt - Socratic dialogue with full layered prompt
+    p4c_prompt = prompt_builder.build_prompt(
+        session_history=[],
+        child_input=request.child_input,
+        age_group=request.age_group,
+        last_question_type=None,
+        recent_types=[],
+        rag_moves=None,
+        stimulus=None
+    )
     
     # Get model
     model_name = (

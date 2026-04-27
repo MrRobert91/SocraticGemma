@@ -167,3 +167,7 @@ lcov.info
 *.temp
 .tmp/
 .temp/
+
+# Frontend build
+frontend/.next/
+next-env.d.ts
