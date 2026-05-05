@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# code changes
+lib/
+lib64/
+!frontend/src/lib/
