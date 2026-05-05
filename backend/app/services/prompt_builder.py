@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-import yaml
 
 
 # Path to the prompts directory
@@ -63,7 +62,7 @@ class PromptBuilder:
             if filepath.exists():
                 with open(filepath, 'r', encoding='utf-8') as f:
                     key = filename.replace('.yaml', '')
-                    self.prompts[key] = yaml.safe_load(f)
+                    self.prompts[key] = f.read()
             else:
                 self.prompts[filename.replace('.yaml', '')] = ""
 
