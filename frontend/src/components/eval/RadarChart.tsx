@@ -102,8 +102,8 @@ export function RadarChart({ scores }: RadarChartProps) {
           >
             <div className="text-center">
               <div>{point.label}</div>
-              <div className={`font-bold ${getScoreColor(scores[point.key as keyof EvalScores])}`}>
-                {scores[point.key as keyof EvalScores].toFixed(1)}
+              <div className={`font-bold ${getScoreColor(scores[point.key])}`}>
+                {scores[point.key].toFixed(1)}
               </div>
             </div>
           </div>
