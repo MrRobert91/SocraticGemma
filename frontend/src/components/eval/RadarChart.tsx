@@ -2,12 +2,14 @@
 
 import { EvalScores, getScoreColor } from '@/lib/types';
 
+type RequiredScoreKey = 'socratism' | 'age_fit' | 'builds_on' | 'openness' | 'advancement' | 'overall';
+
 interface RadarChartProps {
   scores: EvalScores;
 }
 
 export function RadarChart({ scores }: RadarChartProps) {
-  const labels = [
+  const labels: { key: RequiredScoreKey; label: string }[] = [
     { key: 'socratism', label: 'Socratismo' },
     { key: 'age_fit', label: 'Ajuste edad' },
     { key: 'builds_on', label: 'Construye' },
@@ -21,7 +23,7 @@ export function RadarChart({ scores }: RadarChartProps) {
 
   const points = labels.map((label, i) => {
     const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
-    const value = (scores[label.key as keyof EvalScores] / maxScore) * radius;
+    const value = (scores[label.key] / maxScore) * radius;
     return {
       x: center + value * Math.cos(angle),
       y: center + value * Math.sin(angle),
