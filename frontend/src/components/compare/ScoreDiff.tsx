@@ -10,7 +10,7 @@ interface ScoreDiffProps {
 export function ScoreDiff({ base, p4c }: ScoreDiffProps) {
   const scoreKeys: (keyof EvalScores)[] = ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement', 'overall'];
 
-  const labels: Record<keyof EvalScores, string> = {
+  const labels: Partial<Record<keyof EvalScores, string>> = {
     socratism: 'Socratismo',
     age_fit: 'Ajuste edad',
     builds_on: 'Construye',

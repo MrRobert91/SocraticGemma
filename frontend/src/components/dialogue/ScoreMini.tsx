@@ -10,7 +10,7 @@ interface ScoreMiniProps {
 export function ScoreMini({ scores, showLabels = false }: ScoreMiniProps) {
   const scoreKeys: (keyof EvalScores)[] = ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement'];
 
-  const labels: Record<keyof EvalScores, string> = {
+  const labels: Partial<Record<keyof EvalScores, string>> = {
     socratism: 'Socrat.',
     age_fit: 'Edad',
     builds_on: 'Continúa',
