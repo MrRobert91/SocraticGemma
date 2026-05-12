@@ -101,7 +101,7 @@ export interface EvalSummary {
   turn_count: number;
   avg_scores: EvalScores;
   question_type_distribution: Partial<Record<QuestionType, number>>;
-  forbidden_behaviors_by_turn: Record<string, unknown>[];
+  forbidden_behaviors_by_turn: Record<string, string[]>;
 }
 
 // ─── Compare response ─────────────────────────────────────────────────────────
