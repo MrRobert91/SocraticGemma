@@ -81,6 +81,22 @@ export interface Turn {
   timestamp?: string | number;
 }
 
+// ─── Streaming ────────────────────────────────────────────────────────────────
+
+export type StreamStatus = 'idle' | 'connecting' | 'streaming' | 'complete' | 'error';
+
+export interface ThinkingEvent {
+  trace: string;
+}
+
+export interface TokenEvent {
+  text: string;
+}
+
+export interface CompleteEvent {
+  turn: Turn;
+}
+
 // ─── Session response ─────────────────────────────────────────────────────────
 
 export interface SessionResponse {
