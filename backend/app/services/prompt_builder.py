@@ -189,9 +189,15 @@ CURRENT ROTATION STATUS:
         layers.append("=" * 50 + "\nLAYER 6: SESSION CONTEXT\n" + "=" * 50)
         
         if stimulus:
+            title = stimulus.get('title') or stimulus.get('content', '')
+            content = stimulus.get('content', '')
+            stimulus_type = stimulus.get('type', 'question')
             stimulus_text = f"""STIMULUS FOR THIS SESSION:
-{stimulus.get('text', 'No stimulus text')}
-Source: {stimulus.get('source', 'Unknown')}
+Title: {title}
+Type: {stimulus_type}
+Content: {content}
+
+This is the philosophical starting point for the entire dialogue. Base your questions on this stimulus.
 """
             layers.append(stimulus_text)
         
