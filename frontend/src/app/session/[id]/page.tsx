@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SessionResponse, Turn } from '@/lib/types';
 import { useSession } from '@/hooks/useSession';
@@ -18,6 +18,7 @@ export default function SessionPage() {
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch session on mount
   useEffect(() => {
@@ -66,6 +67,8 @@ export default function SessionPage() {
     sendMessage(sessionId, inputText);
     setInputText('');
     setIsTyping(true);
+    // Restore focus to textarea after state update
+    setTimeout(() => textareaRef.current?.focus(), 0);
   }, [inputText, isTyping, sessionId, sendMessage]);
 
   // Handle streaming complete
@@ -178,6 +181,7 @@ export default function SessionPage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex gap-3">
             <textarea
+              ref={textareaRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
