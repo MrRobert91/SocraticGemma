@@ -8,7 +8,7 @@ import { StimulusForm } from '@/components/setup/StimulusForm';
 import { ComparePanel } from '@/components/compare/ComparePanel';
 import { ScoreDiff } from '@/components/compare/ScoreDiff';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/backend';
 
 export default function ComparePage() {
   const router = useRouter();

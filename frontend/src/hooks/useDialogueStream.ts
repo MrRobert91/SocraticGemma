@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { StreamStatus, Turn, ThinkingEvent, TokenEvent, CompleteEvent } from '@/lib/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/backend';
 
 interface UseDialogueStreamReturn {
   sendMessage: (sessionId: string, text: string) => void;
