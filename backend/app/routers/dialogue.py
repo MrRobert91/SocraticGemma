@@ -70,37 +70,45 @@ async def process_turn(
     
     async def event_generator():
         """Generate SSE events from the engine."""
-        async for event in engine.process_turn(
-            session_id=session_id,
-            child_input=child_input,
-            session_store=session_store,
-            prompt_builder=prompt_builder,
-            gemma_client=gemma_client,
-            evaluator=evaluator,
-            rag_service=None  # Could be enabled if RAG service is available
-        ):
-            if event["type"] == "thinking":
-                yield {
-                    "event": "thinking",
-                    "data": json.dumps({"trace": event["trace"]})
-                }
-            elif event["type"] == "token":
-                yield {
-                    "event": "token", 
-                    "data": json.dumps({"text": event["text"]})
-                }
-            elif event["type"] == "complete":
-                yield {
-                    "event": "complete",
-                    "data": json.dumps({
-                        "turn": event["turn"],
-                        "scores": event["scores"]
-                    })
-                }
-            elif event["type"] == "error":
-                yield {
-                    "event": "error",
-                    "data": json.dumps({"message": event["message"]})
-                }
+        try:
+            async for event in engine.process_turn(
+                session_id=session_id,
+                child_input=child_input,
+                session_store=session_store,
+                prompt_builder=prompt_builder,
+                gemma_client=gemma_client,
+                evaluator=evaluator,
+                rag_service=None  # Could be enabled if RAG service is available
+            ):
+                if event["type"] == "thinking":
+                    yield {
+                        "event": "thinking",
+                        "data": json.dumps({"trace": event["trace"]})
+                    }
+                elif event["type"] == "token":
+                    yield {
+                        "event": "token",
+                        "data": json.dumps({"text": event["text"]})
+                    }
+                elif event["type"] == "complete":
+                    yield {
+                        "event": "complete",
+                        "data": json.dumps({
+                            "turn": event["turn"],
+                            "scores": event["scores"]
+                        })
+                    }
+                elif event["type"] == "error":
+                    yield {
+                        "event": "error",
+                        "data": json.dumps({"message": event["message"]})
+                    }
+        except Exception as exc:
+            import logging
+            logging.error("Unhandled SSE generator error: %s", exc)
+            yield {
+                "event": "error",
+                "data": json.dumps({"message": str(exc)})
+            }
     
     return EventSourceResponse(event_generator())

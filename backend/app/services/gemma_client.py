@@ -97,7 +97,16 @@ class GemmaClient:
             }
         
         async with client.stream("POST", "/chat/completions", json=payload) as response:
-            response.raise_for_status()
+            if response.status_code >= 400:
+                error_body = await response.aread()
+                import logging
+                logging.error(
+                    "OpenRouter error %s for model %s: %s",
+                    response.status_code,
+                    model_name,
+                    error_body.decode(errors="replace")
+                )
+                response.raise_for_status()
             
             thinking_buffer = ""
             content_buffer = ""

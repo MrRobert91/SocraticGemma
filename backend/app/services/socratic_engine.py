@@ -135,32 +135,37 @@ class SocraticEngine:
         thinking_buffer = ""
         content_buffer = ""
         in_thinking = False
-        
-        async for chunk in gemma_client.generate(
-            prompt=prompt,
-            model_name=model_name,
-            max_tokens=500,
-            streaming=True,
-            thinking_mode=False  # thinking_mode handled by tag detection, not API
-        ):
-            if chunk:
-                if "<|start_of_thought|>" in chunk or in_thinking:
-                    in_thinking = True
-                    thinking_buffer += chunk
-                    if "<|end_of_thought|>" in chunk:
-                        in_thinking = False
-                        # Filter out the thinking tags from buffer
-                        thinking_buffer = re.sub(
-                            r'<\|start_of_thought\|>(.*?)<\|end_of_thought\|>',
-                            r'\1',
-                            thinking_buffer,
-                            flags=re.DOTALL
-                        )
-                    yield {"type": "thinking", "trace": chunk}
-                else:
-                    content_buffer += chunk
-                    yield {"type": "token", "text": chunk}
-        
+
+        try:
+            async for chunk in gemma_client.generate(
+                prompt=prompt,
+                model_name=model_name,
+                max_tokens=500,
+                streaming=True,
+                thinking_mode=False  # thinking_mode handled by tag detection, not API
+            ):
+                if chunk:
+                    if "<|start_of_thought|>" in chunk or in_thinking:
+                        in_thinking = True
+                        thinking_buffer += chunk
+                        if "<|end_of_thought|>" in chunk:
+                            in_thinking = False
+                            thinking_buffer = re.sub(
+                                r'<\|start_of_thought\|>(.*?)<\|end_of_thought\|>',
+                                r'\1',
+                                thinking_buffer,
+                                flags=re.DOTALL
+                            )
+                        yield {"type": "thinking", "trace": chunk}
+                    else:
+                        content_buffer += chunk
+                        yield {"type": "token", "text": chunk}
+        except Exception as exc:
+            import logging
+            logging.error("Error streaming from model: %s", exc)
+            yield {"type": "error", "message": str(exc)}
+            return
+
         # Clean the thinking trace (remove tags if still present)
         thinking_trace = re.sub(
             r'<\|start_of_thought\|>|<\|end_of_thought\|>',
