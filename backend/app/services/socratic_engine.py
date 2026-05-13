@@ -7,6 +7,7 @@ import time
 from typing import Any, AsyncGenerator, Optional
 
 from ..models import EvalScores, Session, Turn
+from ..config import settings
 from .gemma_client import GemmaClient
 from .prompt_builder import PromptBuilder
 from .evaluator import Evaluator
@@ -127,8 +128,8 @@ class SocraticEngine:
         
         # Get model name based on session settings
         model_name = (
-            "google/gemma-4-27b-it" if session.model_size == "accurate"
-            else "google/gemma-4-e2b-it"
+            settings.gemma_model_accurate if session.model_size == "accurate"
+            else settings.gemma_model_fast
         )
         
         # Step 3: Stream via GemmaClient

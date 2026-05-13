@@ -63,8 +63,8 @@ async def compare_responses(request: CompareRequest) -> CompareResponse:
     
     # Get model
     model_name = (
-        "google/gemma-4-27b-it" if request.model_size == "accurate"
-        else "google/gemma-4-e2b-it"
+        settings.gemma_model_accurate if request.model_size == "accurate"
+        else settings.gemma_model_fast
     )
     
     # Generate baseline response
