@@ -159,8 +159,9 @@ class SocraticEngine:
                             )
                         yield {"type": "thinking", "trace": chunk}
                     else:
+                        # Accumulate content — do NOT stream tokens yet,
+                        # because the model outputs JSON that must be parsed first.
                         content_buffer += chunk
-                        yield {"type": "token", "text": chunk}
         except Exception as exc:
             import logging
             logging.error("Error streaming from model: %s", exc)
@@ -181,6 +182,21 @@ class SocraticEngine:
             content_buffer,
             flags=re.DOTALL
         ).strip()
+
+        # Parse JSON response from model (output_format prompt returns JSON)
+        detected_question_type: Optional[str] = None
+        try:
+            # Strip markdown code fences if present
+            json_str = re.sub(r'^```(?:json)?\s*|\s*```$', '', final_content, flags=re.DOTALL).strip()
+            parsed = json.loads(json_str)
+            if isinstance(parsed, dict) and "question" in parsed:
+                detected_question_type = parsed.get("question_type")
+                final_content = parsed["question"]
+        except (json.JSONDecodeError, ValueError):
+            pass  # Not JSON, use content as-is
+
+        # Emit the question text as a single token event now that it's been parsed
+        yield {"type": "token", "text": final_content}
         
         # Step 4: Evaluate in parallel
         eval_task = asyncio.create_task(
@@ -194,7 +210,7 @@ class SocraticEngine:
         eval_scores, forbidden_behaviors = await eval_task
         
         # Step 5: Detect question type from content
-        question_type = self._detect_question_type(final_content)
+        question_type = detected_question_type or self._detect_question_type(final_content)
         
         # Create turn object
         turn = Turn(
