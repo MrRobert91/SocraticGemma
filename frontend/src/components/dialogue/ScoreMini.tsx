@@ -9,36 +9,43 @@ interface ScoreMiniProps {
 
 type RequiredScoreKey = 'socratism' | 'age_fit' | 'builds_on' | 'openness' | 'advancement' | 'overall';
 
-export function ScoreMini({ scores, showLabels = false }: ScoreMiniProps) {
+export function ScoreMini({ scores }: ScoreMiniProps) {
   const scoreKeys: RequiredScoreKey[] = ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement'];
 
   const labels: Record<RequiredScoreKey, string> = {
-    socratism: 'Socrat.',
-    age_fit: 'Edad',
-    builds_on: 'Continúa',
-    openness: 'Abierto',
-    advancement: 'Progreso',
+    socratism: 'Socrático',
+    age_fit: 'Adecuado a la edad',
+    builds_on: 'Continúa el hilo',
+    openness: 'Pregunta abierta',
+    advancement: 'Avanza el diálogo',
     overall: 'Total',
   };
 
+  const descriptions: Record<RequiredScoreKey, string> = {
+    socratism: 'Qué tan socrático es el enfoque (evita dar respuestas directas)',
+    age_fit: 'Qué tan apropiado es el lenguaje y la complejidad para la edad',
+    builds_on: 'Qué tan bien se apoya en lo que dijo el niño',
+    openness: 'Qué tan abierta es la pregunta (evita respuestas de sí/no)',
+    advancement: 'Cuánto avanza la indagación filosófica',
+    overall: 'Puntuación general',
+  };
+
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1.5">
       {scoreKeys.map((key) => (
         <div
           key={key}
           className={`
-            inline-flex items-center gap-1 px-2 py-1 rounded
+            inline-flex flex-col items-center px-2 py-1 rounded-lg
             ${getScoreBgColor(scores[key])}
           `}
-          title={showLabels ? `${labels[key]}: ${scores[key].toFixed(1)}` : undefined}
+          title={descriptions[key]}
         >
-          {showLabels && (
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              {labels[key]}
-            </span>
-          )}
-          <span className={`text-sm font-semibold ${getScoreColor(scores[key])}`}>
+          <span className={`text-sm font-bold leading-tight ${getScoreColor(scores[key])}`}>
             {scores[key].toFixed(1)}
+          </span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5 text-center">
+            {labels[key]}
           </span>
         </div>
       ))}
