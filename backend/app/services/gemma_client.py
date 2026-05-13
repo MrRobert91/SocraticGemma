@@ -1,12 +1,17 @@
 """Async client for Gemma models via OpenRouter API."""
 
+import asyncio
 import json
+import logging
 import re
 from typing import AsyncGenerator, Optional
 
 import httpx
 
 from ..config import settings
+
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 5.0  # seconds
 
 
 class GemmaClient:
@@ -95,52 +100,52 @@ class GemmaClient:
                     "order": ["google"]
                 }
             }
-        
-        async with client.stream("POST", "/chat/completions", json=payload) as response:
-            if response.status_code >= 400:
-                error_body = await response.aread()
-                import logging
-                logging.error(
-                    "OpenRouter error %s for model %s: %s",
-                    response.status_code,
-                    model_name,
-                    error_body.decode(errors="replace")
-                )
-                response.raise_for_status()
-            
-            thinking_buffer = ""
-            content_buffer = ""
-            in_thinking = False
-            
-            async for line in response.aiter_lines():
-                if not line.startswith("data: "):
-                    continue
-                    
-                data = line[6:]  # Remove "data: " prefix
-                
-                if data == "[DONE]":
-                    break
-                
-                try:
-                    chunk = json.loads(data)
-                except json.JSONDecodeError:
-                    continue
-                
-                # Extract content delta
-                if "choices" in chunk and len(chunk["choices"]) > 0:
-                    delta = chunk["choices"][0].get("delta", {})
-                    
-                    # Check for thinking content
-                    if "thinking" in delta:
-                        thinking_content = delta["thinking"]
-                        thinking_buffer += thinking_content
-                        yield thinking_content
-                    
-                    # Check for content
-                    if "content" in delta:
-                        content = delta["content"]
-                        content_buffer += content
-                        yield content
+
+        for attempt in range(_MAX_RETRIES):
+            try:
+                async with client.stream("POST", "/chat/completions", json=payload) as response:
+                    if response.status_code == 429:
+                        error_body = await response.aread()
+                        wait = _RETRY_BASE_DELAY * (2 ** attempt)
+                        logging.warning(
+                            "OpenRouter 429 for model %s (attempt %d/%d), retrying in %.0fs: %s",
+                            model_name, attempt + 1, _MAX_RETRIES,
+                            wait, error_body.decode(errors="replace")
+                        )
+                        await asyncio.sleep(wait)
+                        continue
+                    if response.status_code >= 400:
+                        error_body = await response.aread()
+                        logging.error(
+                            "OpenRouter error %s for model %s: %s",
+                            response.status_code, model_name,
+                            error_body.decode(errors="replace")
+                        )
+                        response.raise_for_status()
+
+                    async for line in response.aiter_lines():
+                        if not line.startswith("data: "):
+                            continue
+                        data = line[6:]
+                        if data == "[DONE]":
+                            return
+                        try:
+                            chunk = json.loads(data)
+                        except json.JSONDecodeError:
+                            continue
+                        if "choices" in chunk and len(chunk["choices"]) > 0:
+                            delta = chunk["choices"][0].get("delta", {})
+                            if "thinking" in delta:
+                                yield delta["thinking"]
+                            if "content" in delta and delta["content"]:
+                                yield delta["content"]
+                    return  # success
+            except httpx.HTTPStatusError:
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** attempt))
+
+        raise RuntimeError(f"Model {model_name} rate-limited after {_MAX_RETRIES} retries")
 
     async def generate_structured(
         self,
