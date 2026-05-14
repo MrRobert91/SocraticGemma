@@ -16,6 +16,7 @@ export default function SessionPage() {
   const { sendMessage, tokens, thinking_trace, currentTurn, status, error, reset } = useDialogueStream();
 
   const [session, setSession] = useState<SessionResponse | null>(null);
+  const [assistantTurnCount, setAssistantTurnCount] = useState(0);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,7 +25,11 @@ export default function SessionPage() {
   useEffect(() => {
     if (sessionId) {
       getSession(sessionId)
-        .then(setSession)
+        .then((s) => {
+          setSession(s);
+          // All turns returned by the API are assistant turns
+          setAssistantTurnCount(s.turns.length);
+        })
         .catch((err) => console.error('Failed to fetch session:', err));
     }
   }, [sessionId, getSession]);
@@ -33,6 +38,7 @@ export default function SessionPage() {
   // streaming bubble separately, so there is no duplication.
   useEffect(() => {
     if (!currentTurn) return;
+    setAssistantTurnCount((n) => n + 1);
     setSession((prev) =>
       prev ? { ...prev, turns: [...prev.turns, currentTurn] } : prev
     );
@@ -128,7 +134,7 @@ export default function SessionPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-              Turno {session.turns.filter(t => t.role === 'assistant').length} / {session.total_turns}
+              Turno {assistantTurnCount} / {session.total_turns}
             </span>
             <button
               onClick={() => { reset(); router.push(`/eval/${sessionId}`); }}
