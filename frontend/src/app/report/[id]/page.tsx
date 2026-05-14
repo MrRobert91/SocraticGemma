@@ -8,11 +8,11 @@ import { useReport } from '@/hooks/useReport';
 function renderMarkdown(text: string): string {
   return text
     // headings
-    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-indigo-700 dark:text-indigo-300 mt-6 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-indigo-800 dark:text-indigo-200 mt-8 mb-3 border-b border-indigo-200 dark:border-indigo-700 pb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-8 mb-4">$1</h1>')
+    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-6 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-black text-emerald-800 dark:text-emerald-300 mt-8 mb-3 border-b-2 border-black dark:border-white pb-1">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-black text-emerald-900 dark:text-emerald-200 mt-8 mb-4">$1</h1>')
     // bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-black">$1</strong>')
     // italic
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
     // unordered list items
@@ -20,9 +20,9 @@ function renderMarkdown(text: string): string {
     // wrap consecutive li in ul
     .replace(/(<li[\s\S]+?<\/li>\n?)+/g, (m) => `<ul class="my-2 space-y-1">${m}</ul>`)
     // horizontal rule
-    .replace(/^---$/gm, '<hr class="my-6 border-indigo-200 dark:border-indigo-700" />')
+    .replace(/^---$/gm, '<hr class="my-6 border-2 border-black dark:border-white" />')
     // paragraph (lines that aren't already wrapped in a tag)
-    .replace(/^(?!<[a-z]|\s*$)(.+)$/gm, '<p class="mb-3 leading-relaxed text-gray-700 dark:text-gray-300">$1</p>')
+    .replace(/^(?!<[a-z]|\s*$)(.+)$/gm, '<p class="mb-3 leading-relaxed">$1</p>')
     // blank lines → spacing
     .replace(/^\s*$/gm, '');
 }

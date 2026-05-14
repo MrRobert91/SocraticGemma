@@ -17,6 +17,7 @@ export default function SessionPage() {
 
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [assistantTurnCount, setAssistantTurnCount] = useState(0);
+  const [extraTurns, setExtraTurns] = useState(0);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -181,7 +182,36 @@ export default function SessionPage() {
         </div>
       )}
 
+      {/* Turn limit reached */}
+      {session && assistantTurnCount >= session.total_turns + extraTurns && !isTyping && (
+        <div
+          className="bg-[var(--bg-card)] border-t-2 border-[var(--border)]"
+          style={{ boxShadow: '0 -4px 0 0 var(--border)' }}
+        >
+          <div className="max-w-4xl mx-auto px-4 py-5">
+            <p className="text-center font-black text-[var(--text)] mb-4">
+              🏁 Has llegado al límite de {session.total_turns + extraTurns} turnos
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => { reset(); router.push(`/report/${sessionId}`); }}
+                className="neo-btn px-6 py-3 text-base"
+              >
+                🗺️ Ver perfil filosófico
+              </button>
+              <button
+                onClick={() => setExtraTurns((n) => n + 5)}
+                className="neo-btn-ghost px-6 py-3 text-base"
+              >
+                ➕ Continuar 5 turnos más
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
+      {(!session || assistantTurnCount < session.total_turns + extraTurns || isTyping) && (
       <div
         className="bg-[var(--bg-card)] border-t-2 border-[var(--border)]"
         style={{ boxShadow: '0 -4px 0 0 var(--border)' }}
@@ -224,6 +254,7 @@ export default function SessionPage() {
           </p>
         </div>
       </div>
+      )}
     </div>
   );
 }
