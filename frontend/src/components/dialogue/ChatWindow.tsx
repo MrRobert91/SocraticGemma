@@ -18,7 +18,10 @@ export function ChatWindow({ turns, isStreaming, streamingContent }: ChatWindowP
   }, [turns, streamingContent]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+    <div
+      className="flex-1 overflow-y-auto px-4 py-6 space-y-5"
+      style={{ background: 'var(--bg)' }}
+    >
       {turns.map((turn, index) => (
         <MessageBubble
           key={index}

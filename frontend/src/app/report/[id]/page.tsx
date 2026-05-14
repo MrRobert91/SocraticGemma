@@ -74,32 +74,33 @@ export default function ReportPage() {
   }, [content]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header className="border-b border-indigo-200 dark:border-indigo-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
+      <header
+        className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push(`/session/${sessionId}`)}
-              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              className="neo-btn-ghost px-2 py-1 text-lg font-bold"
+              aria-label="Volver"
             >
               ←
             </button>
-            <span className="text-2xl">🗺️</span>
-            <h1 className="font-bold text-gray-900 dark:text-white">Perfil Filosófico</h1>
+            <span className="text-2xl" aria-hidden="true">🗺️</span>
+            <h1 className="font-black text-[var(--text)]">Perfil Filosófico</h1>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push(`/eval/${sessionId}`)}
-              className="px-3 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg transition-colors"
+              className="neo-btn-ghost px-3 py-1.5 text-sm"
             >
               📊 Evaluación técnica
             </button>
             {status === 'complete' && content && (
-              <button
-                onClick={handleDownloadPdf}
-                className="px-3 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
-              >
+              <button onClick={handleDownloadPdf} className="neo-btn px-3 py-1.5 text-sm">
                 🖨️ Imprimir / PDF
               </button>
             )}
@@ -110,18 +111,18 @@ export default function ReportPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Idle state: no report yet */}
         {status === 'idle' && (
-          <div className="text-center py-20">
+          <div className="text-center py-20 animate-scale-in">
             <p className="text-6xl mb-6">🗺️</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            <h2 className="text-2xl font-black text-[var(--text)] mb-3">
               Tu mapa filosófico
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+            <p className="text-[var(--muted)] mb-8 max-w-md mx-auto">
               Genera un informe personalizado basado en tu conversación: qué corrientes filosóficas
               resuenan contigo, cuáles son tus puntos ciegos, y qué caminos explorar.
             </p>
             <button
               onClick={() => generateReport(sessionId)}
-              className="px-8 py-4 bg-indigo-500 text-white text-lg font-semibold rounded-xl hover:bg-indigo-600 transition-colors shadow-lg"
+              className="neo-btn px-8 py-4 text-lg"
             >
               ✨ Generar informe filosófico
             </button>
@@ -133,17 +134,17 @@ export default function ReportPage() {
           <div>
             {status === 'loading' && (
               <div className="text-center py-12">
-                <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Analizando la conversación...</p>
+                <div className="animate-spin h-12 w-12 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-4" />
+                <p className="font-semibold text-[var(--muted)]">Analizando la conversación...</p>
               </div>
             )}
             {content && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-indigo-100 dark:border-indigo-900">
+              <div className="neo-card p-8">
                 <div
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                  className="text-gray-800 dark:text-gray-200"
+                  className="text-[var(--text)]"
                 />
-                <span className="inline-block h-4 w-2 bg-indigo-400 animate-pulse ml-1 align-middle" />
+                <span className="inline-block h-4 w-2 bg-emerald-600 dark:bg-emerald-400 animate-pulse ml-1 align-middle" />
               </div>
             )}
           </div>
@@ -151,12 +152,9 @@ export default function ReportPage() {
 
         {/* Error state */}
         {status === 'error' && (
-          <div className="text-center py-12">
-            <p className="text-rose-600 dark:text-rose-400 mb-4">{error}</p>
-            <button
-              onClick={() => generateReport(sessionId)}
-              className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
-            >
+          <div className="neo-card bg-rose-100 p-8 text-center text-rose-800">
+            <p className="font-bold mb-4">{error}</p>
+            <button onClick={() => generateReport(sessionId)} className="neo-btn px-6 py-3">
               Reintentar
             </button>
           </div>
@@ -164,28 +162,22 @@ export default function ReportPage() {
 
         {/* Complete state */}
         {status === 'complete' && content && (
-          <div>
-            <div
-              ref={reportRef}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-indigo-100 dark:border-indigo-900"
-            >
+          <div className="animate-fade-up">
+            <div ref={reportRef} className="neo-card p-8">
               <div
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                className="text-gray-800 dark:text-gray-200"
+                className="text-[var(--text)]"
               />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3 justify-center">
               <button
                 onClick={() => generateReport(sessionId)}
-                className="px-5 py-2 text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                className="neo-btn-ghost px-5 py-2 text-sm"
               >
                 🔄 Regenerar informe
               </button>
-              <button
-                onClick={handleDownloadPdf}
-                className="px-5 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
-              >
+              <button onClick={handleDownloadPdf} className="neo-btn px-5 py-2 text-sm">
                 🖨️ Imprimir / PDF
               </button>
             </div>

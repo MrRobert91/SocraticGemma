@@ -15,26 +15,22 @@ export function ComparePanel({ result }: ComparePanelProps) {
     <div className="space-y-6">
       {/* Header with improvement */}
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-          <span className="text-lg">📈</span>
-          <span className="font-semibold">
-            Mejora del {improvement_pct.toFixed(1)}%
-          </span>
+        <div className="inline-flex items-center gap-2 neo-tag bg-[var(--accent-bg)] text-emerald-900 dark:text-emerald-100 px-4 py-2 text-base">
+          <span>📈</span>
+          <span>Mejora del {improvement_pct.toFixed(1)}%</span>
         </div>
       </div>
 
       {/* Side by side comparison */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Baseline */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-              🅱️ Respuesta Base
-            </h3>
+        <div className="neo-card overflow-hidden">
+          <div className="bg-[var(--bg)] px-4 py-2 border-b-2 border-[var(--border)]">
+            <h3 className="font-black text-[var(--text)]">🅱️ Respuesta Base</h3>
           </div>
           <div className="p-4 space-y-4">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            <div className="neo-card bg-[var(--bg)] p-4">
+              <p className="text-sm text-[var(--text)] whitespace-pre-wrap">
                 {base_response.content}
               </p>
             </div>
@@ -44,15 +40,13 @@ export function ComparePanel({ result }: ComparePanelProps) {
         </div>
 
         {/* P4C */}
-        <div className="border border-amber-200 dark:border-amber-700 rounded-xl overflow-hidden">
-          <div className="bg-amber-100 dark:bg-amber-900/50 px-4 py-2 border-b border-amber-200 dark:border-amber-700">
-            <h3 className="font-semibold text-amber-700 dark:text-amber-300">
-              ✨ Respuesta SocraticGemma
-            </h3>
+        <div className="neo-card overflow-hidden">
+          <div className="bg-[var(--accent-bg)] px-4 py-2 border-b-2 border-[var(--border)]">
+            <h3 className="font-black text-emerald-900 dark:text-emerald-100">✨ Respuesta SocraticGemma</h3>
           </div>
           <div className="p-4 space-y-4">
-            <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4">
-              <p className="text-sm text-amber-900 dark:text-amber-100 whitespace-pre-wrap">
+            <div className="neo-card bg-[var(--accent-bg)] p-4">
+              <p className="text-sm text-emerald-900 dark:text-emerald-100 whitespace-pre-wrap">
                 {p4c_response.content}
               </p>
             </div>

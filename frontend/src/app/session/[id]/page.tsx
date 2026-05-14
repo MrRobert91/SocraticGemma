@@ -87,10 +87,10 @@ export default function SessionPage() {
 
   if (sessionLoading && !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Cargando sesión...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="neo-card p-8 text-center animate-scale-in">
+          <div className="animate-spin h-10 w-10 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full mx-auto mb-4" />
+          <p className="font-bold text-[var(--text)]">Cargando sesión...</p>
         </div>
       </div>
     );
@@ -98,13 +98,10 @@ export default function SessionPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400">Sesión no encontrada</p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
-          >
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="neo-card p-8 text-center animate-scale-in">
+          <p className="font-bold text-[var(--text)] mb-4">Sesión no encontrada</p>
+          <button onClick={() => router.push('/')} className="neo-btn px-4 py-2">
             Volver al inicio
           </button>
         </div>
@@ -113,38 +110,42 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-amber-200 dark:border-amber-800 sticky top-0 z-10">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      {/* ─── Header ─── */}
+      <header
+        className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/')}
-              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              className="neo-btn-ghost px-2 py-1 text-sm"
+              aria-label="Volver al inicio"
             >
               ←
             </button>
-            <span className="text-2xl">🤔</span>
+            <span className="text-2xl" aria-hidden="true">🤔</span>
             <div>
-              <h1 className="font-bold text-gray-900 dark:text-white">SocraticGemma</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {session.age_group} años • {session.stimulus.title || 'Sesión'}
+              <p className="font-black text-[var(--text)] text-sm leading-tight">SocraticGemma</p>
+              <p className="text-xs text-[var(--muted)]">
+                {session.age_group} años · {session.stimulus.title || 'Sesión'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+            <span className="text-xs font-bold text-[var(--muted)] hidden sm:block">
               Turno {assistantTurnCount} / {session.total_turns}
             </span>
             <button
               onClick={() => { reset(); router.push(`/eval/${sessionId}`); }}
-              className="px-3 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors"
+              className="neo-btn-ghost px-3 py-1.5 text-xs"
             >
               📊 Evaluación
             </button>
             <button
               onClick={() => { reset(); router.push(`/report/${sessionId}`); }}
-              className="px-3 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
+              className="neo-btn px-3 py-1.5 text-xs"
             >
               🗺️ Perfil
             </button>
@@ -152,15 +153,13 @@ export default function SessionPage() {
         </div>
       </header>
 
-      {/* Initial stimulus */}
-      <div className="max-w-4xl mx-auto w-full px-4 py-4">
-        <div className="bg-amber-100/50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
-            💬 Pregunta inicial:
+      {/* Stimulus banner */}
+      <div className="max-w-4xl mx-auto w-full px-4 pt-4">
+        <div className="neo-card bg-[var(--accent-bg)] p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-300 mb-1">
+            💬 Pregunta inicial
           </p>
-          <p className="text-gray-700 dark:text-gray-300">
-            {session.stimulus.content}
-          </p>
+          <p className="text-[var(--text)] font-medium">{session.stimulus.content}</p>
         </div>
       </div>
 
@@ -176,14 +175,17 @@ export default function SessionPage() {
       {/* Error message */}
       {error && (
         <div className="max-w-4xl mx-auto px-4 w-full">
-          <div className="bg-rose-100 dark:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg p-3 text-rose-700 dark:text-rose-300 text-sm">
-            Error: {error}
+          <div className="neo-card bg-rose-100 p-3 text-rose-800 font-semibold text-sm">
+            ⚠️ {error}
           </div>
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+      {/* Input area */}
+      <div
+        className="bg-[var(--bg-card)] border-t-2 border-[var(--border)]"
+        style={{ boxShadow: '0 -4px 0 0 var(--border)' }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex gap-3">
             <textarea
@@ -194,28 +196,31 @@ export default function SessionPage() {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu respuesta..."
               disabled={status === 'streaming' || status === 'connecting'}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800"
+              className="neo-input flex-1 px-4 py-3 resize-none"
               rows={1}
             />
             <button
               onClick={handleSend}
               disabled={!inputText.trim() || status === 'streaming' || status === 'connecting'}
-              className="px-6 py-3 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="neo-btn px-6 py-3"
             >
               {status === 'streaming' || status === 'connecting' ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                </>
+                <svg
+                  className="animate-spin h-5 w-5 flex-shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
               ) : (
                 'Enviar'
               )}
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-            Presiona Enter para enviar • Shift+Enter para nueva línea
+          <p className="text-xs text-[var(--muted)] mt-2 text-center">
+            Enter para enviar · Shift+Enter para nueva línea
           </p>
         </div>
       </div>

@@ -2,13 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { SessionResponse, EvalSummary, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '@/lib/types';
+import { SessionResponse, EvalSummary, QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
 import { useSession } from '@/hooks/useSession';
 import { useEval } from '@/hooks/useEval';
 import { RadarChart } from '@/components/eval/RadarChart';
 import { TurnScoreList } from '@/components/eval/TurnScoreList';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/backend';
+
+const NEO_QTAG: Record<QuestionType, string> = {
+  conceptual:    'bg-violet-200 text-violet-900',
+  assumption:    'bg-amber-200  text-amber-900',
+  evidence:      'bg-sky-200    text-sky-900',
+  perspective:   'bg-emerald-200 text-emerald-900',
+  implication:   'bg-rose-200   text-rose-900',
+  metacognitive: 'bg-indigo-200 text-indigo-900',
+  opening:       'bg-teal-200   text-teal-900',
+  statement:     'bg-gray-200   text-gray-900',
+};
 
 export default function EvalPage() {
   const params = useParams();
@@ -52,10 +63,10 @@ export default function EvalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">{loadingMessage}</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="neo-card p-8 text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="font-bold text-[var(--text)]">{loadingMessage}</p>
         </div>
       </div>
     );
@@ -63,15 +74,10 @@ export default function EvalPage() {
 
   if (error || !session || !evalSummary) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <p className="text-rose-600 dark:text-rose-400 mb-4">
-            {error || 'No se pudo cargar la evaluación'}
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
-          >
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="neo-card bg-rose-100 p-8 text-center text-rose-800 max-w-sm">
+          <p className="font-bold mb-4">{error || 'No se pudo cargar la evaluación'}</p>
+          <button onClick={() => router.push('/')} className="neo-btn px-4 py-2">
             Volver al inicio
           </button>
         </div>
@@ -83,20 +89,24 @@ export default function EvalPage() {
   const totalQuestions = qTypeEntries.reduce((sum, [, count]) => sum + count, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header className="border-b border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
+      <header
+        className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => router.push('/')}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="neo-btn-ghost px-2 py-1 text-lg font-bold"
+            aria-label="Volver"
           >
             ←
           </button>
-          <span className="text-3xl">📊</span>
+          <span className="text-3xl" aria-hidden="true">📊</span>
           <div>
-            <h1 className="font-bold text-gray-900 dark:text-white">Panel de Evaluación</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <h1 className="font-black text-[var(--text)]">Panel de Evaluación</h1>
+            <p className="text-xs font-semibold text-[var(--muted)]">
               {session.age_group} años • {session.stimulus.title || 'Sesión'}
             </p>
           </div>
@@ -108,25 +118,13 @@ export default function EvalPage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`
-              px-4 py-2 rounded-lg font-medium transition-colors
-              ${activeTab === 'overview'
-                ? 'bg-amber-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-              }
-            `}
+            className={activeTab === 'overview' ? 'neo-toggle-on px-4 py-2' : 'neo-toggle-off px-4 py-2'}
           >
             📈 Resumen
           </button>
           <button
             onClick={() => setActiveTab('turns')}
-            className={`
-              px-4 py-2 rounded-lg font-medium transition-colors
-              ${activeTab === 'turns'
-                ? 'bg-amber-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-              }
-            `}
+            className={activeTab === 'turns' ? 'neo-toggle-on px-4 py-2' : 'neo-toggle-off px-4 py-2'}
           >
             💬 Turnos
           </button>
@@ -136,67 +134,52 @@ export default function EvalPage() {
           <div className="space-y-6">
             {/* Stats cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-100 dark:border-amber-900">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Turnos</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {evalSummary.turn_count}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-100 dark:border-amber-900">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Socratismo</p>
-                <p className={`text-2xl font-bold ${
-                  evalSummary.avg_scores.socratism >= 4 ? 'text-emerald-600' :
-                  evalSummary.avg_scores.socratism >= 3 ? 'text-amber-600' : 'text-rose-600'
-                }`}>
-                  {evalSummary.avg_scores.socratism.toFixed(1)}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-100 dark:border-amber-900">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Ajuste edad</p>
-                <p className={`text-2xl font-bold ${
-                  evalSummary.avg_scores.age_fit >= 4 ? 'text-emerald-600' :
-                  evalSummary.avg_scores.age_fit >= 3 ? 'text-amber-600' : 'text-rose-600'
-                }`}>
-                  {evalSummary.avg_scores.age_fit.toFixed(1)}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-amber-100 dark:border-amber-900">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total</p>
-                <p className={`text-2xl font-bold ${
-                  evalSummary.avg_scores.overall >= 4 ? 'text-emerald-600' :
-                  evalSummary.avg_scores.overall >= 3 ? 'text-amber-600' : 'text-rose-600'
-                }`}>
-                  {evalSummary.avg_scores.overall.toFixed(1)}
-                </p>
-              </div>
+              {[
+                { label: 'Turnos', val: evalSummary.turn_count, raw: true },
+                { label: 'Socratismo', val: evalSummary.avg_scores.socratism },
+                { label: 'Ajuste edad', val: evalSummary.avg_scores.age_fit },
+                { label: 'Total', val: evalSummary.avg_scores.overall },
+              ].map(({ label, val, raw }) => {
+                const num = typeof val === 'number' ? val : 0;
+                const color = raw ? 'text-[var(--text)]'
+                  : num >= 4 ? 'text-emerald-600' : num >= 3 ? 'text-amber-600' : 'text-rose-600';
+                return (
+                  <div key={label} className="neo-card p-4 animate-scale-in">
+                    <p className="neo-label mb-2">{label}</p>
+                    <p className={`text-2xl font-black ${color}`}>
+                      {raw ? val : num.toFixed(1)}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Radar chart and distribution */}
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  🎯 Puntuaciones proedio
+              <div className="neo-card p-6">
+                <h3 className="text-lg font-black text-[var(--text)] mb-4">
+                  🎯 Puntuaciones promedio
                 </h3>
                 <RadarChart scores={evalSummary.avg_scores} />
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <div className="neo-card p-6">
+                <h3 className="text-lg font-black text-[var(--text)] mb-4">
                   📊 Distribución de tipos de preguntas
                 </h3>
                 <div className="space-y-3">
                   {qTypeEntries.map(([type, count]) => (
                     <div key={type} className="flex items-center gap-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${QUESTION_TYPE_COLORS[type]}`}>
+                      <span className={`neo-tag text-xs px-2 py-0.5 shrink-0 ${NEO_QTAG[type] ?? 'bg-gray-200 text-gray-900'}`}>
                         {QUESTION_TYPE_LABELS[type]}
                       </span>
-                      <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                      <div className="flex-1 bg-[var(--bg)] border-2 border-[var(--border)] rounded-none h-4 overflow-hidden">
                         <div
-                          className="h-full bg-amber-500 rounded-full transition-all"
+                          className="h-full bg-[var(--accent)] transition-all"
                           style={{ width: `${(count / totalQuestions) * 100}%` }}
                         />
                       </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400 w-8 text-right">
+                      <span className="text-sm font-bold text-[var(--muted)] w-6 text-right">
                         {count}
                       </span>
                     </div>
@@ -207,8 +190,8 @@ export default function EvalPage() {
 
             {/* Forbidden behaviors */}
             {Object.values(evalSummary.forbidden_behaviors_by_turn).some((arr) => arr.length > 0) && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-rose-200 dark:border-rose-800">
-                <h3 className="text-lg font-semibold text-rose-700 dark:text-rose-300 mb-4">
+              <div className="neo-card p-6 bg-rose-50 dark:bg-rose-950/20">
+                <h3 className="text-lg font-black text-rose-700 dark:text-rose-300 mb-4">
                   ⚠️ Comportamientos detectados
                 </h3>
                 <div className="space-y-3">
@@ -216,15 +199,12 @@ export default function EvalPage() {
                     .filter(([, behaviors]) => behaviors.length > 0)
                     .map(([turn, behaviors], idx) => (
                       <div key={idx} className="flex gap-3">
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-20">
+                        <span className="text-sm font-bold text-[var(--muted)] w-20 shrink-0">
                           Turno {parseInt(turn) + 1}:
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {behaviors.map((behavior, bIdx) => (
-                            <span
-                              key={bIdx}
-                              className="px-2 py-1 bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded text-sm"
-                            >
+                            <span key={bIdx} className="neo-tag bg-rose-100 text-rose-800 text-xs px-2 py-0.5">
                               {behavior}
                             </span>
                           ))}
@@ -236,8 +216,8 @@ export default function EvalPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="neo-card p-6">
+            <h3 className="text-lg font-black text-[var(--text)] mb-4">
               💬 Puntuaciones por turno
             </h3>
             <TurnScoreList turns={session.turns} />
@@ -248,13 +228,13 @@ export default function EvalPage() {
         <div className="flex gap-4 mt-8">
           <button
             onClick={() => router.push(`/session/${sessionId}`)}
-            className="flex-1 py-3 px-6 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="flex-1 neo-btn-ghost py-3 px-6"
           >
             ↩️ Volver al diálogo
           </button>
           <button
             onClick={() => router.push('/')}
-            className="flex-1 py-3 px-6 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 transition-colors"
+            className="flex-1 neo-btn py-3 px-6"
           >
             🏠 Nueva sesión
           </button>

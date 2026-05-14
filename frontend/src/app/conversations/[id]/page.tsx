@@ -3,9 +3,20 @@
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '@/lib/types';
+import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
+
+const NEO_QTAG: Record<QuestionType, string> = {
+  conceptual:    'bg-violet-200 text-violet-900',
+  assumption:    'bg-amber-200  text-amber-900',
+  evidence:      'bg-sky-200    text-sky-900',
+  perspective:   'bg-emerald-200 text-emerald-900',
+  implication:   'bg-rose-200   text-rose-900',
+  metacognitive: 'bg-indigo-200 text-indigo-900',
+  opening:       'bg-teal-200   text-teal-900',
+  statement:     'bg-gray-200   text-gray-900',
+};
 
 function renderMarkdown(text: string): string {
   return text
@@ -42,16 +53,16 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
   const [showThinking, setShowThinking] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 animate-fade-up">
       {/* Child message */}
       {turn.child_input && (
         <div className="flex justify-end">
-          <div className="max-w-[80%] flex flex-col items-end gap-1">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 px-2">
+          <div className="max-w-[80%] flex flex-col items-end gap-1.5">
+            <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 px-1">
               👤 Usuario
             </span>
-            <div className="px-4 py-3 rounded-2xl rounded-br-md bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100">
-              <p className="whitespace-pre-wrap leading-relaxed">{turn.child_input}</p>
+            <div className="neo-card bg-[var(--accent-bg)] px-4 py-3">
+              <p className="whitespace-pre-wrap leading-relaxed text-[var(--text)]">{turn.child_input}</p>
             </div>
           </div>
         </div>
@@ -59,41 +70,36 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
 
       {/* AI message */}
       <div className="flex justify-start">
-        <div className="max-w-[80%] flex flex-col items-start gap-1">
-          <span className="text-xs font-medium text-sky-600 dark:text-sky-400 px-2">
+        <div className="max-w-[80%] flex flex-col items-start gap-1.5">
+          <span className="text-xs font-black uppercase tracking-widest text-[var(--text)] px-1">
             🤖 SocraticGemma
           </span>
-          <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-sky-100 dark:bg-sky-900/50 text-sky-900 dark:text-sky-100">
-            <p className="whitespace-pre-wrap leading-relaxed">{turn.content}</p>
+          <div className="neo-card bg-[var(--bg-card)] px-4 py-3">
+            <p className="whitespace-pre-wrap leading-relaxed text-[var(--text)]">{turn.content}</p>
           </div>
 
-          {/* Metadata row */}
           <div className="flex flex-wrap items-center gap-2 px-1 mt-0.5">
-            {/* Question type tag */}
             {turn.question_type && (
               <span
-                className={`inline-flex items-center rounded-full border font-medium text-xs px-2 py-0.5 ${
-                  QUESTION_TYPE_COLORS[turn.question_type as QuestionType] ?? 'bg-gray-100 text-gray-700'
+                className={`neo-tag text-xs px-2 py-0.5 ${
+                  NEO_QTAG[turn.question_type as QuestionType] ?? 'bg-gray-200 text-gray-900'
                 }`}
               >
                 {QUESTION_TYPE_LABELS[turn.question_type as QuestionType] ?? turn.question_type}
               </span>
             )}
-
-            {/* Thinking trace toggle */}
             {turn.thinking_trace && (
               <button
                 onClick={() => setShowThinking((v) => !v)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline"
+                className="text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] underline"
               >
                 {showThinking ? 'Ocultar razonamiento' : 'Ver razonamiento'}
               </button>
             )}
           </div>
 
-          {/* Thinking trace */}
           {showThinking && turn.thinking_trace && (
-            <div className="mt-1 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap max-h-48 overflow-y-auto font-mono">
+            <div className="neo-card mt-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-900 dark:text-indigo-200 whitespace-pre-wrap max-h-48 overflow-y-auto font-mono">
               {turn.thinking_trace}
             </div>
           )}
@@ -187,29 +193,20 @@ export default function ConversationDetailPage({
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header className="border-b border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3">
-              <span className="text-3xl">🤔</span>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">SocraticGemma</h1>
-            </Link>
-          </div>
-          <nav className="flex gap-4">
-            <Link
-              href="/"
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400"
-            >
-              Inicio
-            </Link>
-            <Link
-              href="/conversations"
-              className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700"
-            >
-              ← Conversaciones
-            </Link>
+      <header
+        className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="text-3xl" aria-hidden="true">🤔</span>
+            <span className="text-xl font-black tracking-tight text-[var(--text)]">SocraticGemma</span>
+          </Link>
+          <nav className="flex gap-2" aria-label="Navegación">
+            <Link href="/"             className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
+            <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">← Conversaciones</Link>
           </nav>
         </div>
       </header>
@@ -217,70 +214,60 @@ export default function ConversationDetailPage({
       <main className="max-w-4xl mx-auto px-4 py-8">
         {loading && (
           <div className="space-y-4">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse" />
-            <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-1/3 animate-pulse" />
+            <div className="h-8 bg-[var(--muted)] opacity-20 rounded w-2/3 animate-pulse" />
+            <div className="h-4 bg-[var(--muted)] opacity-10 rounded w-1/3 animate-pulse" />
             <div className="mt-8 space-y-6">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+                <div key={i} className="neo-card h-24 animate-pulse" />
               ))}
             </div>
           </div>
         )}
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-800 p-6 text-center text-rose-700 dark:text-rose-400">
-            <p className="font-semibold">No se pudo cargar la conversación</p>
+          <div className="neo-card bg-rose-100 p-6 text-center text-rose-800">
+            <p className="font-bold">No se pudo cargar la conversación</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
         )}
 
         {conv && (
           <>
-            {/* Conversation header */}
-            <div className="mb-8 p-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900 shadow-sm">
+            {/* Conversation header card */}
+            <div className="neo-card mb-8 p-5 animate-scale-in">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-xl font-black text-[var(--text)]">
                     {conv.stimulus.title || conv.stimulus.content}
                   </h2>
                   {conv.stimulus.title && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {conv.stimulus.content}
-                    </p>
-                  )}
-                </div>
-                <span className="shrink-0 text-sm px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-medium">
-                  {AGE_LABELS[conv.age_group] ?? conv.age_group}
-                </span>
+                  <p className="text-sm text-[var(--muted)] mt-1">{conv.stimulus.content}</p>
+                )}
               </div>
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>🗓️ {formatDate(conv.created_at)}</span>
-                  <span>💬 {conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
-                  <span className={`font-medium ${
-                    conv.model_size === 'accurate'
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-amber-600 dark:text-amber-400'
-                  }`}>
-                    {conv.model_size === 'accurate' ? '🎯 Preciso' : '⚡ Rápido'}
-                  </span>
-                  <span>🔒 Modo lectura</span>
-                </div>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="shrink-0 px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {deleting ? 'Eliminando…' : '🗑️ Eliminar'}
-                </button>
-              </div>
+              <span className="shrink-0 neo-tag bg-[var(--accent-bg)] text-emerald-900 dark:text-emerald-100 text-sm px-3 py-1">
+                {AGE_LABELS[conv.age_group] ?? conv.age_group}
+              </span>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-4 text-xs font-semibold text-[var(--muted)]">
+                <span>🗓️ {formatDate(conv.created_at)}</span>
+                <span>💬 {conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
+                <span>🔒 Modo lectura</span>
+              </div>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="neo-btn-danger shrink-0 px-3 py-1.5 text-xs"
+              >
+                {deleting ? 'Eliminando…' : '🗑️ Eliminar'}
+              </button>
+            </div>
+          </div>
             {/* Turns */}
             <div className="space-y-8">
               {conv.turns.length === 0 ? (
-                <p className="text-center text-gray-400 py-12">
+                <p className="text-center text-[var(--muted)] py-12">
                   Esta conversación no tiene turnos guardados.
                 </p>
               ) : (
@@ -294,34 +281,28 @@ export default function ConversationDetailPage({
             {reportContent && (
               <div className="mt-10">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2">
+                  <h3 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
                     🗺️ Perfil Filosófico
                   </h3>
                   <button
                     onClick={handleDownloadPdf}
-                    className="px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
+                    className="neo-btn px-4 py-2 text-sm"
                   >
                     🖨️ Imprimir / PDF
                   </button>
                 </div>
-                <div
-                  ref={reportRef}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-indigo-100 dark:border-indigo-900 p-6 shadow-sm"
-                >
+                <div ref={reportRef} className="neo-card p-6">
                   <div
                     dangerouslySetInnerHTML={{ __html: renderMarkdown(reportContent) }}
-                    className="text-gray-800 dark:text-gray-200"
+                    className="text-[var(--text)]"
                   />
                 </div>
               </div>
             )}
 
             {/* Footer */}
-            <div className="mt-10 pt-6 border-t border-amber-200 dark:border-amber-800 flex justify-between items-center text-sm text-gray-400">
-              <Link
-                href="/conversations"
-                className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-              >
+            <div className="mt-10 pt-6 border-t-2 border-[var(--border)] flex justify-between items-center text-sm font-semibold text-[var(--muted)]">
+              <Link href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">
                 ← Volver a la lista
               </Link>
               <span>ID: {conv.id}</span>

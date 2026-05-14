@@ -1,52 +1,51 @@
 'use client';
 
-import { EvalScores, getScoreColor, getScoreBgColor } from '@/lib/types';
+import { EvalScores } from '@/lib/types';
 
 interface ScoreMiniProps {
   scores: EvalScores;
   showLabels?: boolean;
 }
 
-type RequiredScoreKey = 'socratism' | 'age_fit' | 'builds_on' | 'openness' | 'advancement' | 'overall';
+type ScoreKey = 'socratism' | 'age_fit' | 'builds_on' | 'openness' | 'advancement';
+
+const SCORE_KEYS: ScoreKey[] = ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement'];
+
+const LABELS: Record<ScoreKey, string> = {
+  socratism:   'Socrático',
+  age_fit:     'Edad',
+  builds_on:   'Hilo',
+  openness:    'Abierto',
+  advancement: 'Avance',
+};
+
+const DESCRIPTIONS: Record<ScoreKey, string> = {
+  socratism:   'Qué tan socrático es el enfoque',
+  age_fit:     'Apropiado para la edad',
+  builds_on:   'Se apoya en lo dicho',
+  openness:    'Pregunta abierta',
+  advancement: 'Avanza el diálogo',
+};
+
+function scoreBg(v: number) {
+  return v >= 4
+    ? 'bg-emerald-200 text-emerald-900'
+    : v >= 3
+    ? 'bg-amber-200 text-amber-900'
+    : 'bg-rose-200 text-rose-900';
+}
 
 export function ScoreMini({ scores }: ScoreMiniProps) {
-  const scoreKeys: RequiredScoreKey[] = ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement'];
-
-  const labels: Record<RequiredScoreKey, string> = {
-    socratism: 'Socrático',
-    age_fit: 'Adecuado a la edad',
-    builds_on: 'Continúa el hilo',
-    openness: 'Pregunta abierta',
-    advancement: 'Avanza el diálogo',
-    overall: 'Total',
-  };
-
-  const descriptions: Record<RequiredScoreKey, string> = {
-    socratism: 'Qué tan socrático es el enfoque (evita dar respuestas directas)',
-    age_fit: 'Qué tan apropiado es el lenguaje y la complejidad para la edad',
-    builds_on: 'Qué tan bien se apoya en lo que dijo el niño',
-    openness: 'Qué tan abierta es la pregunta (evita respuestas de sí/no)',
-    advancement: 'Cuánto avanza la indagación filosófica',
-    overall: 'Puntuación general',
-  };
-
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {scoreKeys.map((key) => (
+    <div className="flex flex-wrap gap-2">
+      {SCORE_KEYS.map((key) => (
         <div
           key={key}
-          className={`
-            inline-flex flex-col items-center px-2 py-1 rounded-lg
-            ${getScoreBgColor(scores[key])}
-          `}
-          title={descriptions[key]}
+          className={`neo-tag ${scoreBg(scores[key])} flex flex-col items-center px-2 py-1`}
+          title={DESCRIPTIONS[key]}
         >
-          <span className={`text-sm font-bold leading-tight ${getScoreColor(scores[key])}`}>
-            {scores[key].toFixed(1)}
-          </span>
-          <span className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5 text-center">
-            {labels[key]}
-          </span>
+          <span className="text-sm font-black leading-tight">{scores[key].toFixed(1)}</span>
+          <span className="text-[10px] leading-tight mt-0.5">{LABELS[key]}</span>
         </div>
       ))}
     </div>

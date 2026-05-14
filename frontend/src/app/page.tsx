@@ -31,12 +31,10 @@ export default function HomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!stimulus.content.trim()) {
       alert('Por favor, introduce un estímulo o pregunta');
       return;
     }
-
     try {
       const data: CreateSessionRequest = {
         age_group: ageGroup,
@@ -46,7 +44,6 @@ export default function HomePage() {
         language,
         total_turns: totalTurns,
       };
-
       const sessionId = await createSession(data);
       router.push(`/session/${sessionId}`);
     } catch (err) {
@@ -55,91 +52,85 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="border-b border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      {/* ─── Header ─────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-10 bg-[var(--bg-card)] border-b-2 border-[var(--border)]"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🤔</span>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <span className="text-3xl" aria-hidden="true">🤔</span>
+            <span className="text-xl font-black tracking-tight text-[var(--text)]">
               SocraticGemma
-            </h1>
+            </span>
           </div>
-          <nav className="flex gap-4">
-            <a
-              href="/compare"
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400"
-            >
-              Comparar
-            </a>
-            <a
-              href="/conversations"
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400"
-            >
-              Conversaciones
-            </a>
+          <nav className="flex gap-2" aria-label="Navegación principal">
+            <a href="/compare"       className="neo-btn-ghost px-3 py-1.5 text-sm">Comparar</a>
+            <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">Conversaciones</a>
           </nav>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            La IA que pregunta en lugar de responder.
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        {/* ─── Hero ──────────────────────────────────────────── */}
+        <div className="mb-10 animate-fade-up">
+          <h1 className="text-4xl md:text-5xl font-black text-[var(--text)] leading-tight mb-4">
+            La IA que pregunta<br />en lugar de responder.
+          </h1>
+          <p className="text-lg text-[var(--muted)] max-w-2xl">
             SocraticGemma usa el método socrático para guiar a niños y adolescentes
             en la exploración de ideas filosóficas a través del diálogo.
           </p>
         </div>
 
-        {/* Main Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Age Selector */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
+        {/* ─── Form ──────────────────────────────────────────── */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Age selector */}
+          <section className="neo-card p-6 animate-fade-up">
             <AgeSelector value={ageGroup} onChange={setAgeGroup} />
-          </div>
+          </section>
 
-          {/* Stimulus Form */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              💬 Tu pregunta o escenario
-            </h3>
+          {/* Stimulus form */}
+          <section className="neo-card p-6 animate-fade-up">
+            <h2 className="neo-label">💬 Tu pregunta o escenario</h2>
             <StimulusForm stimulus={stimulus} onChange={setStimulus} />
-          </div>
+          </section>
 
           {/* Presets */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
+          <section className="neo-card p-6 animate-fade-up">
             <Presets selectedAge={ageGroup} onSelect={handlePresetSelect} />
-          </div>
+          </section>
 
-          {/* Advanced Options */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-amber-100 dark:border-amber-900">
+          {/* Advanced options */}
+          <section className="neo-card animate-fade-up">
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between text-left"
+              className="w-full flex items-center justify-between px-6 py-4 text-left"
+              aria-expanded={showAdvanced}
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <span className="font-black text-sm uppercase tracking-widest text-[var(--text)]">
                 ⚙️ Opciones avanzadas
-              </h3>
-              <span className={`transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
+              </span>
+              <span
+                aria-hidden="true"
+                className={`text-xs font-bold transition-transform duration-150 ${showAdvanced ? 'rotate-180' : ''}`}
+              >
                 ▼
               </span>
             </button>
 
             {showAdvanced && (
-              <div className="mt-4 space-y-4">
+              <div className="px-6 pb-6 space-y-5 border-t-2 border-[var(--border)] pt-5">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Idioma
-                    </label>
+                    <label className="neo-label" htmlFor="lang-select">Idioma</label>
                     <select
+                      id="lang-select"
                       value={language}
                       onChange={(e) => setLanguage(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      className="neo-select px-4 py-2.5"
                     >
                       <option value="es">Español</option>
                       <option value="en">English</option>
@@ -149,35 +140,35 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex flex-wrap gap-5">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
                     <input
                       type="checkbox"
                       checked={ragEnabled}
                       onChange={(e) => setRagEnabled(e.target.checked)}
-                      className="w-4 h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-500"
+                      className="w-4 h-4 rounded border-2 border-black"
+                      style={{ accentColor: 'var(--accent-dark)' }}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">
-                      📚 RAG habilitado
-                    </span>
+                    📚 RAG habilitado
                   </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
                     <input
                       type="checkbox"
                       checked={thinkingMode}
                       onChange={(e) => setThinkingMode(e.target.checked)}
-                      className="w-4 h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-500"
+                      className="w-4 h-4 rounded border-2 border-black"
+                      style={{ accentColor: 'var(--accent-dark)' }}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">
-                      🧠 Mostrar proceso de razonamiento
-                    </span>
+                    🧠 Mostrar razonamiento
                   </label>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    💬 Duración de la conversación: <span className="text-amber-600 dark:text-amber-400 font-semibold">{totalTurns} turnos</span>
+                  <label className="neo-label">
+                    💬 Duración:{' '}
+                    <span className="font-black" style={{ color: 'var(--accent-dark)' }}>
+                      {totalTurns} turnos
+                    </span>
                   </label>
                   <input
                     type="range"
@@ -186,61 +177,56 @@ export default function HomePage() {
                     step={5}
                     value={totalTurns}
                     onChange={(e) => setTotalTurns(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className="w-full h-2 cursor-pointer"
+                    style={{ accentColor: 'var(--accent-dark)' }}
+                    aria-label={`Duración de la conversación: ${totalTurns} turnos`}
                   />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <div className="flex justify-between text-xs font-bold text-[var(--muted)] mt-1">
                     <span>5</span>
                     <span>50</span>
                   </div>
                 </div>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="bg-rose-100 dark:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg p-4 text-rose-700 dark:text-rose-300">
-              Error: {error}
+            <div className="neo-card bg-rose-100 p-4 font-semibold text-rose-800 animate-fade-up">
+              ⚠️ {error}
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className={`
-              w-full py-4 px-6 rounded-xl text-lg font-semibold
-              bg-gradient-to-r from-amber-500 to-orange-500
-              text-white shadow-lg
-              hover:from-amber-600 hover:to-orange-600
-              disabled:from-gray-400 disabled:to-gray-500
-              disabled:cursor-not-allowed
-              transition-all transform hover:scale-[1.02] active:scale-[0.98]
-            `}
+            className="neo-btn w-full py-4 px-6 text-lg animate-fade-up"
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 flex-shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 Creando sesión...
-              </span>
+              </>
             ) : (
-              <span className="flex items-center justify-center gap-2">
-                🚀 Iniciar diálogo socrático
-              </span>
+              '🚀 Iniciar diálogo socrático'
             )}
           </button>
         </form>
       </main>
 
-      {/* Footer */}
-      <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        <p>
-          SocraticGemma usa Google Gemma 2 para generar preguntas socráticas adaptadas a cada edad.
-        </p>
+      <footer className="max-w-4xl mx-auto px-4 py-8 mt-8 border-t-2 border-[var(--border)] text-center text-sm text-[var(--muted)]">
+        SocraticGemma usa Google Gemma 2 para generar preguntas socráticas adaptadas a cada edad.
       </footer>
     </div>
   );
 }
+

@@ -72,10 +72,10 @@ export function RadarChart({ scores }: RadarChartProps) {
           fillOpacity="0.2"
           stroke="currentColor"
           strokeWidth="2"
-          className="text-amber-500"
+          className="text-emerald-500"
         />
 
-        {/* Data points */}
+        {/* Data points */
         {points.map((point, i) => (
           <circle
             key={i}
@@ -83,7 +83,7 @@ export function RadarChart({ scores }: RadarChartProps) {
             cy={point.y}
             r="4"
             fill="currentColor"
-            className="text-amber-500"
+            className="text-emerald-500"
           />
         ))}
       </svg>
