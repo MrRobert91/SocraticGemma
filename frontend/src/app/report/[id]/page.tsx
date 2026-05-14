@@ -45,9 +45,11 @@ export default function ReportPage() {
     if (!reportRef.current || !content) return;
     setPdfLoading(true);
     try {
-      // Dynamic import — html2pdf.js is browser-only
-      const html2pdf = (await import('html2pdf.js')).default;
-      await html2pdf()
+      // Dynamic import — html2pdf.js is browser-only (UMD module, need .default ?? mod)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod: any = await import('html2pdf.js');
+      const html2pdf = mod.default ?? mod;
+      html2pdf()
         .set({
           margin: [15, 15, 15, 15],
           filename: `perfil-filosofico-${sessionId.slice(0, 8)}.pdf`,

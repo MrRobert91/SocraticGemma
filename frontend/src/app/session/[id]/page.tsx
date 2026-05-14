@@ -29,23 +29,13 @@ export default function SessionPage() {
     }
   }, [sessionId, getSession]);
 
-  // Update session when turn completes
+  // Update session when turn completes — always append; ChatWindow shows the live
+  // streaming bubble separately, so there is no duplication.
   useEffect(() => {
-    if (currentTurn && session) {
-      const updatedTurns = [...session.turns];
-      // Replace the last assistant turn if it exists, otherwise append
-      const lastAssistantIdx = updatedTurns.findLastIndex((t) => t.role === 'assistant');
-      if (lastAssistantIdx >= 0) {
-        updatedTurns[lastAssistantIdx] = currentTurn;
-      } else {
-        updatedTurns.push(currentTurn);
-      }
-
-      setSession({
-        ...session,
-        turns: updatedTurns,
-      });
-    }
+    if (!currentTurn) return;
+    setSession((prev) =>
+      prev ? { ...prev, turns: [...prev.turns, currentTurn] } : prev
+    );
   }, [currentTurn]);
 
   // Add child turn immediately when sending
