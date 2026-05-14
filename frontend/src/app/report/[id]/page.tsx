@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { useReport } from '@/hooks/useReport';
 
 // Simple markdown-to-HTML renderer (no external lib needed for basic structure)
@@ -43,13 +44,12 @@ export default function ReportPage() {
 
   const handleDownloadPdf = useCallback(async () => {
     if (!reportRef.current || !content) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const html2pdf = (window as any).html2pdf;
+    if (!html2pdf) { alert('El generador de PDF aún se está cargando. Intenta de nuevo en un momento.'); return; }
     setPdfLoading(true);
     try {
-      // Dynamic import — html2pdf.js is browser-only (UMD module, need .default ?? mod)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mod: any = await import('html2pdf.js');
-      const html2pdf = mod.default ?? mod;
-      html2pdf()
+      await html2pdf()
         .set({
           margin: [15, 15, 15, 15],
           filename: `perfil-filosofico-${sessionId.slice(0, 8)}.pdf`,
@@ -67,6 +67,10 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        strategy="lazyOnload"
+      />
       {/* Header */}
       <header className="border-b border-indigo-200 dark:border-indigo-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">

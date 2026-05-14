@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
@@ -134,12 +135,12 @@ export default function ConversationDetailPage({
 
   const handleDownloadPdf = useCallback(async () => {
     if (!reportRef.current || !reportContent) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const html2pdf = (window as any).html2pdf;
+    if (!html2pdf) { alert('El generador de PDF aún se está cargando. Intenta de nuevo en un momento.'); return; }
     setPdfLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mod: any = await import('html2pdf.js');
-      const html2pdf = mod.default ?? mod;
-      html2pdf()
+      await html2pdf()
         .set({
           margin: [15, 15, 15, 15],
           filename: `perfil-filosofico-${id.slice(0, 8)}.pdf`,
@@ -179,6 +180,10 @@ export default function ConversationDetailPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        strategy="lazyOnload"
+      />
       {/* Header */}
       <header className="border-b border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
