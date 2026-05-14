@@ -56,7 +56,7 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
         <div className="flex justify-end">
           <div className="max-w-[80%] flex flex-col items-end gap-1">
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400 px-2">
-              👤 Niño
+              👤 Usuario
             </span>
             <div className="px-4 py-3 rounded-2xl rounded-br-md bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100">
               <p className="whitespace-pre-wrap leading-relaxed">{turn.child_input}</p>

@@ -37,7 +37,7 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
             ${isChild ? 'text-amber-600 dark:text-amber-400' : 'text-sky-600 dark:text-sky-400'}
           `}
         >
-          {isChild ? '👤 Niño' : '🤖 SocraticGemma'}
+          {isChild ? '👤 Usuario' : '🤖 SocraticGemma'}
         </div>
 
         {/* Message bubble */}
