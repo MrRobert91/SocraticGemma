@@ -1,8 +1,9 @@
-"""Read-only conversations endpoints backed by SQLite."""
+"""Conversations endpoints backed by SQLite."""
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import Response
 
-from ..database import get_conversations_page, get_conversation_detail
+from ..database import get_conversations_page, get_conversation_detail, delete_conversation
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -32,3 +33,19 @@ async def get_conversation(session_id: str) -> dict:
             detail=f"Conversation {session_id} not found",
         )
     return data
+
+
+@router.delete(
+    "/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a conversation",
+    description="Permanently deletes the conversation, all its turns, and its report from the database.",
+)
+async def delete_conversation_endpoint(session_id: str) -> Response:
+    deleted = await delete_conversation(session_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversation {session_id} not found",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

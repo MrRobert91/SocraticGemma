@@ -1,10 +1,25 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS, getScoreColor, getScoreBgColor } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
+
+function renderMarkdown(text: string): string {
+  return text
+    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-indigo-700 dark:text-indigo-300 mt-6 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-indigo-800 dark:text-indigo-200 mt-8 mb-3 border-b border-indigo-200 dark:border-indigo-700 pb-1">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-8 mb-4">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc mb-1">$1</li>')
+    .replace(/(<li[\s\S]+?<\/li>\n?)+/g, (m) => `<ul class="my-2 space-y-1">${m}</ul>`)
+    .replace(/^---$/gm, '<hr class="my-6 border-indigo-200 dark:border-indigo-700" />')
+    .replace(/^(?!<[a-z]|\s*$)(.+)$/gm, '<p class="mb-3 leading-relaxed text-gray-700 dark:text-gray-300">$1</p>')
+    .replace(/^\s*$/gm, '');
+}
 
 const AGE_LABELS: Record<string, string> = {
   '6-8': '6–8 años',
@@ -147,16 +162,65 @@ export default function ConversationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [conv, setConv] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportContent, setReportContent] = useState<string | null>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm('¿Eliminar esta conversación? Esta acción no se puede deshacer.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) throw new Error(`Error ${res.status}`);
+      router.push('/conversations');
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert('No se pudo eliminar la conversación. Inténtalo de nuevo.');
+      setDeleting(false);
+    }
+  }, [id, router]);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!reportRef.current || !reportContent) return;
+    setPdfLoading(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod: any = await import('html2pdf.js');
+      const html2pdf = mod.default ?? mod;
+      html2pdf()
+        .set({
+          margin: [15, 15, 15, 15],
+          filename: `perfil-filosofico-${id.slice(0, 8)}.pdf`,
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(reportRef.current)
+        .save();
+    } catch (e) {
+      console.error('PDF export failed', e);
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [reportContent, id]);
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API_BASE}/conversations/${id}`);
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        setConv(await res.json());
+        const [convRes, reportRes] = await Promise.all([
+          fetch(`${API_BASE}/conversations/${id}`),
+          fetch(`${API_BASE}/sessions/${id}/report`),
+        ]);
+        if (!convRes.ok) throw new Error(`Error ${convRes.status}`);
+        setConv(await convRes.json());
+        if (reportRes.ok) {
+          const rd = await reportRes.json();
+          setReportContent(rd.content ?? null);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
@@ -234,11 +298,26 @@ export default function ConversationDetailPage({
                 </span>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>🗓️ {formatDate(conv.created_at)}</span>
-                <span>💬 {conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
-                <span>⚡ {conv.model_size === 'fast' ? 'Rápido' : 'Preciso'}</span>
-                <span>🔒 Modo lectura</span>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span>🗓️ {formatDate(conv.created_at)}</span>
+                  <span>💬 {conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
+                  <span className={`font-medium ${
+                    conv.model_size === 'accurate'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`}>
+                    {conv.model_size === 'accurate' ? '🎯 Preciso' : '⚡ Rápido'}
+                  </span>
+                  <span>🔒 Modo lectura</span>
+                </div>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="shrink-0 px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {deleting ? 'Eliminando…' : '🗑️ Eliminar'}
+                </button>
               </div>
             </div>
 
@@ -254,6 +333,33 @@ export default function ConversationDetailPage({
                 ))
               )}
             </div>
+
+            {/* Philosophical report */}
+            {reportContent && (
+              <div className="mt-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2">
+                    🗺️ Perfil Filosófico
+                  </h3>
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={pdfLoading}
+                    className="px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 disabled:bg-gray-400 transition-colors"
+                  >
+                    {pdfLoading ? '⏳ Generando…' : '⬇️ Descargar PDF'}
+                  </button>
+                </div>
+                <div
+                  ref={reportRef}
+                  className="bg-white dark:bg-gray-900 rounded-xl border border-indigo-100 dark:border-indigo-900 p-6 shadow-sm"
+                >
+                  <div
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(reportContent) }}
+                    className="text-gray-800 dark:text-gray-200"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="mt-10 pt-6 border-t border-amber-200 dark:border-amber-800 flex justify-between items-center text-sm text-gray-400">

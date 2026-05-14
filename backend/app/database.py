@@ -290,3 +290,18 @@ async def get_report(session_id: str) -> Optional[str]:
         ) as cur:
             row = await cur.fetchone()
     return row["content"] if row else None
+
+
+async def delete_conversation(session_id: str) -> bool:
+    """Delete a conversation and all its associated turns and report.
+
+    Returns True if a row was deleted, False if the session was not found.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Child tables first (foreign-key order)
+        await db.execute("DELETE FROM reports WHERE session_id = ?", (session_id,))
+        await db.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+        await db.execute("DELETE FROM conversations WHERE id = ?", (session_id,))
+        deleted = db.total_changes > 0
+        await db.commit()
+    return deleted
