@@ -38,6 +38,7 @@ async def create_session(request: CreateSessionRequest) -> dict:
         stimulus=request.stimulus.model_dump(),
         model_size=request.model_size,
         language=request.language,
+        total_turns=request.total_turns,
         turns=[],
         phases={
             "stimulus": False,
@@ -128,6 +129,7 @@ async def get_session(session_id: str) -> SessionResponse:
         stimulus=session.stimulus,
         model_size=session.model_size,
         language=session.language,
+        total_turns=getattr(session, 'total_turns', 20),
         turns=turns_response,
         phases=session.phases,
         created_at=session.created_at

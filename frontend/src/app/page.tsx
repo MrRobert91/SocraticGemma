@@ -22,6 +22,7 @@ export default function HomePage() {
   const [ragEnabled, setRagEnabled] = useState(true);
   const [thinkingMode, setThinkingMode] = useState(true);
   const [language, setLanguage] = useState('es');
+  const [totalTurns, setTotalTurns] = useState(20);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handlePresetSelect = (preset: Preset) => {
@@ -45,6 +46,7 @@ export default function HomePage() {
         rag_enabled: ragEnabled,
         thinking_mode: thinkingMode,
         language,
+        total_turns: totalTurns,
       };
 
       const sessionId = await createSession(data);
@@ -207,6 +209,25 @@ export default function HomePage() {
                       🧠 Mostrar proceso de razonamiento
                     </span>
                   </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    💬 Duración de la conversación: <span className="text-amber-600 dark:text-amber-400 font-semibold">{totalTurns} turnos</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={50}
+                    step={5}
+                    value={totalTurns}
+                    onChange={(e) => setTotalTurns(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>5</span>
+                    <span>50</span>
+                  </div>
                 </div>
               </div>
             )}

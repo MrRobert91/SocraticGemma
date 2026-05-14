@@ -48,6 +48,13 @@ async def init_db() -> None:
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id)"
         )
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                session_id TEXT PRIMARY KEY REFERENCES conversations(id),
+                content TEXT NOT NULL,
+                created_at REAL NOT NULL
+            )
+        """)
         await db.commit()
 
 
@@ -229,3 +236,57 @@ async def get_conversation_detail(session_id: str) -> Optional[dict]:
         "updated_at": conv["updated_at"],
         "turns": turns,
     }
+
+
+async def update_turn_eval(
+    session_id: str,
+    turn_index: int,
+    eval_socratism: float,
+    eval_age_fit: float,
+    eval_builds_on: float,
+    eval_openness: float,
+    eval_advancement: float,
+    eval_overall: float,
+    eval_weighted: float,
+    forbidden_behaviors: list,
+) -> None:
+    """Update evaluation scores for an existing turn."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """UPDATE turns
+               SET eval_socratism = ?, eval_age_fit = ?, eval_builds_on = ?,
+                   eval_openness = ?, eval_advancement = ?, eval_overall = ?,
+                   eval_weighted = ?, forbidden_behaviors = ?
+               WHERE session_id = ? AND turn_index = ?""",
+            (
+                eval_socratism, eval_age_fit, eval_builds_on,
+                eval_openness, eval_advancement, eval_overall,
+                eval_weighted, json.dumps(forbidden_behaviors, ensure_ascii=False),
+                session_id, turn_index,
+            ),
+        )
+        await db.commit()
+
+
+async def save_report(session_id: str, content: str) -> None:
+    """Persist a generated philosophical report (upsert)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO reports (session_id, content, created_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(session_id) DO UPDATE SET content = excluded.content,
+                   created_at = excluded.created_at""",
+            (session_id, content, time.time()),
+        )
+        await db.commit()
+
+
+async def get_report(session_id: str) -> Optional[str]:
+    """Retrieve a saved report, or None if not generated yet."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT content FROM reports WHERE session_id = ?", (session_id,)
+        ) as cur:
+            row = await cur.fetchone()
+    return row["content"] if row else None

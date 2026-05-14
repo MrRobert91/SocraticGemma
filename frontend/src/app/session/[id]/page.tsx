@@ -136,12 +136,23 @@ export default function SessionPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleEndSession}
-            className="px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors"
-          >
-            📊 Ver evaluación
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+              Turno {session.turns.filter(t => t.role === 'assistant').length} / {session.total_turns}
+            </span>
+            <button
+              onClick={() => { reset(); router.push(`/eval/${sessionId}`); }}
+              className="px-3 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors"
+            >
+              📊 Evaluación
+            </button>
+            <button
+              onClick={() => { reset(); router.push(`/report/${sessionId}`); }}
+              className="px-3 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
+            >
+              🗺️ Perfil
+            </button>
+          </div>
         </div>
       </header>
 

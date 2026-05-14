@@ -1,8 +1,7 @@
 'use client';
 
-import { Turn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '@/lib/types';
+import { Turn } from '@/lib/types';
 import { QTypeTag } from './QTypeTag';
-import { ScoreMini } from './ScoreMini';
 import { ThinkingPanel } from './ThinkingPanel';
 
 const FORBIDDEN_LABELS: Record<string, string> = {
@@ -72,28 +71,7 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
           </div>
         )}
 
-        {/* Scores for AI messages */}
-        {!isChild && turn.eval_scores && (
-          <div className="mt-2">
-            <ScoreMini scores={turn.eval_scores} />
-          </div>
-        )}
-
-        {/* Forbidden behaviors warning */}
-        {turn.forbidden_behaviors_detected && turn.forbidden_behaviors_detected.length > 0 && (
-          <div className="mt-2 px-3 py-2 bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-lg">
-            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 mb-1">⚠️ Comportamientos a evitar detectados:</p>
-            <ul className="space-y-0.5">
-              {turn.forbidden_behaviors_detected.map((b) => (
-                <li key={b} className="text-xs text-rose-600 dark:text-rose-400">
-                  {FORBIDDEN_LABELS[b] ?? b}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* RAG moves used */}
+        {/* RAG moves used */
         {turn.rag_moves_used && turn.rag_moves_used.length > 0 && (
           <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             📚 Movimientos RAG: {turn.rag_moves_used.join(', ')}

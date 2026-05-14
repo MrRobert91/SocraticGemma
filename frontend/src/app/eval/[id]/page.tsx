@@ -8,6 +8,8 @@ import { useEval } from '@/hooks/useEval';
 import { RadarChart } from '@/components/eval/RadarChart';
 import { TurnScoreList } from '@/components/eval/TurnScoreList';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/backend';
+
 export default function EvalPage() {
   const params = useParams();
   const router = useRouter();
@@ -19,12 +21,19 @@ export default function EvalPage() {
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [evalSummary, setEvalSummary] = useState<EvalSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Evaluando conversación...');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'turns'>('overview');
 
   useEffect(() => {
     async function fetchData() {
       try {
+        // Step 1: run batch evaluation first
+        setLoadingMessage('Evaluando conversación...');
+        await fetch(`${API_BASE}/sessions/${sessionId}/batch-evaluate`, { method: 'POST' });
+
+        // Step 2: load session + summary (batch-evaluate may have updated scores)
+        setLoadingMessage('Cargando resultados...');
         const [sessionData, evalData] = await Promise.all([
           getSession(sessionId),
           getEval(sessionId),
@@ -46,7 +55,7 @@ export default function EvalPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="animate-spin h-12 w-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Cargando evaluación...</p>
+          <p className="text-gray-600 dark:text-gray-400">{loadingMessage}</p>
         </div>
       </div>
     );

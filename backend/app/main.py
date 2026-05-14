@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router, conversations
+from .routers import report
 from .services.session_store import session_store
 from .database import init_db
 from .config import settings
@@ -112,6 +113,7 @@ app.include_router(prompts.router)
 app.include_router(health.router)
 app.include_router(rag_router.router)
 app.include_router(conversations.router)
+app.include_router(report.router)
 
 
 @app.get("/", tags=["root"])

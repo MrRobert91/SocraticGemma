@@ -52,6 +52,7 @@ class PromptBuilder:
             "age_6_8.yaml",
             "age_9_12.yaml",
             "age_13_16.yaml",
+            "age_adult.yaml",
             "forbidden_rules.yaml",
             "question_types.yaml",
             "output_format.yaml"
@@ -125,7 +126,9 @@ class PromptBuilder:
         last_question_type: Optional[str] = None,
         recent_types: Optional[list[str]] = None,
         rag_moves: Optional[list[str]] = None,
-        stimulus: Optional[dict] = None
+        stimulus: Optional[dict] = None,
+        turn_number: int = 1,
+        total_turns: int = 20,
     ) -> str:
         """Build a complete Socratic prompt with all 7 layers.
         
@@ -143,10 +146,26 @@ class PromptBuilder:
         """
         if recent_types is None:
             recent_types = []
-        
+
+        # Pre-calculate progress instruction (LLM must not do this math)
+        remaining = max(total_turns - turn_number, 0)
+        pct = remaining / total_turns if total_turns > 0 else 0.0
+        if pct > 0.6:
+            progress_instruction = "PROFUNDIZA en el concepto actual — todavía hay tiempo suficiente para ir al fondo."
+        elif pct >= 0.2:
+            progress_instruction = "INTRODUCE nuevos ángulos y perspectivas aún no explorados en esta conversación."
+        else:
+            progress_instruction = "BUSCA síntesis y cierre filosófico significativo — la conversación está llegando a su fin."
+        progress_line = (
+            f"PROGRESO DE SESIÓN: Turno {turn_number} de {total_turns}. "
+            f"Quedan {remaining} turnos ({round(pct * 100)}%). "
+            f"INSTRUCCIÓN: {progress_instruction}"
+        )
+
         # Layer 1: System base
         layers = ["=" * 50 + "\nLAYER 1: SYSTEM IDENTITY\n" + "=" * 50]
         layers.append(self.prompts.get("system_base", ""))
+        layers.append(progress_line)
         
         # Layer 2: Age-specific guidelines
         age_key = self._get_age_prompt_key(age_group)

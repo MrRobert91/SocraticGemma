@@ -10,6 +10,20 @@ export interface Stimulus {
   title?: string;
 }
 
+// ─── Session Response ────────────────────────────────────────────────────────
+
+export interface SessionResponse {
+  session_id: string;
+  age_group: string;
+  stimulus: Stimulus;
+  model_size: string;
+  language: string;
+  total_turns: number;
+  turns: Turn[];
+  phases: Record<string, boolean>;
+  created_at: number;
+}
+
 // ─── Session request ──────────────────────────────────────────────────────────
 
 export interface CreateSessionRequest {
@@ -19,6 +33,7 @@ export interface CreateSessionRequest {
   rag_enabled?: boolean;
   thinking_mode?: boolean;
   language?: string;
+  total_turns?: number;
 }
 
 // ─── Evaluation scores ────────────────────────────────────────────────────────
@@ -95,19 +110,6 @@ export interface TokenEvent {
 
 export interface CompleteEvent {
   turn: Turn;
-}
-
-// ─── Session response ─────────────────────────────────────────────────────────
-
-export interface SessionResponse {
-  session_id: string;
-  age_group: AgeGroup;
-  stimulus: Stimulus;
-  model_size: string;
-  language: string;
-  turns: Turn[];
-  phases: Record<string, boolean>;
-  created_at: number;
 }
 
 // ─── Evaluation summary ───────────────────────────────────────────────────────

@@ -123,7 +123,9 @@ class SocraticEngine:
             last_question_type=last_question_type,
             recent_types=recent_types,
             rag_moves=rag_moves_used if rag_moves_used else None,
-            stimulus=session.stimulus
+            stimulus=session.stimulus,
+            turn_number=len(session.turns) + 1,
+            total_turns=getattr(session, 'total_turns', 20),
         )
         
         # Get model name based on session settings
@@ -180,16 +182,10 @@ class SocraticEngine:
         # Emit the question text as a single token event now that it's been parsed
         yield {"type": "token", "text": final_content}
         
-        # Step 4: Evaluate in parallel
-        eval_task = asyncio.create_task(
-            evaluator.evaluate(
-                child_input=child_input,
-                model_response=final_content,
-                age_group=session.age_group
-            )
-        )
-        
-        eval_scores, forbidden_behaviors = await eval_task
+        # Step 4: Skip per-turn evaluation — batch evaluation runs at session end
+        from ..models import EvalScores as _EvalScores
+        eval_scores = _EvalScores()
+        forbidden_behaviors: list[str] = []
         
         # Step 5: Detect question type from content
         question_type = detected_question_type or self._detect_question_type(final_content)
