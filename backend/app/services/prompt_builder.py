@@ -78,7 +78,8 @@ class PromptBuilder:
         age_map = {
             "6-8": "age_6_8",
             "9-12": "age_9_12",
-            "13-16": "age_13_16"
+            "13-16": "age_13_16",
+            "adult": "age_adult",
         }
         return age_map.get(age_group, "age_9_12")
 
@@ -232,7 +233,7 @@ This is the philosophical starting point for the entire dialogue. Base your ques
             Baseline prompt string.
         """
         # Map age group to approximate numeric age
-        age_map = {"6-8": 7, "9-12": 10, "13-16": 14}
+        age_map = {"6-8": 7, "9-12": 10, "13-16": 14, "adult": 30}
         age = age_map.get(age_group, 10)
         
         baseline = self.prompts.get("baseline", "")

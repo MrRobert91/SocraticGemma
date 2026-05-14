@@ -12,6 +12,7 @@ export function AgeSelector({ value, onChange }: AgeSelectorProps) {
     { value: '6-8', label: '6-8 años', icon: '🌱' },
     { value: '9-12', label: '9-12 años', icon: '🌿' },
     { value: '13-16', label: '13-16 años', icon: '🌳' },
+    { value: 'adult', label: 'Adultos', icon: '🧠' },
   ];
 
   return (
@@ -19,7 +20,7 @@ export function AgeSelector({ value, onChange }: AgeSelectorProps) {
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
         Grupo de edad
       </label>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {ageGroups.map((group) => (
           <button
             key={group.value}

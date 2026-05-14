@@ -46,7 +46,7 @@ class Turn:
 class Session:
     """A complete Socratic dialogue session."""
     session_id: str
-    age_group: str  # "6-8", "9-12", or "13-16"
+    age_group: str  # "6-8", "9-12", "13-16", or "adult"
     stimulus: dict = field(default_factory=dict)
     model_size: str = "fast"  # "fast" or "accurate"
     thinking_mode: bool = True  # Show/hide Gemma 4 thinking trace

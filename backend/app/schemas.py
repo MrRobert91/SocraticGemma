@@ -20,7 +20,7 @@ class Stimulus(BaseModel):
 class CreateSessionRequest(BaseModel):
     """Request to create a new Socratic dialogue session."""
     age_group: str = Field(
-        description="Age group of the child: '6-8', '9-12', or '13-16'"
+        description="Age group: '6-8', '9-12', '13-16', or 'adult'"
     )
     stimulus: Stimulus = Field(
         description="The stimulus to begin the dialogue with"
