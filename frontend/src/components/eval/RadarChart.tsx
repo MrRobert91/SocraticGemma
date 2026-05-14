@@ -75,7 +75,7 @@ export function RadarChart({ scores }: RadarChartProps) {
           className="text-emerald-500"
         />
 
-        {/* Data points */
+        {/* Data points */}
         {points.map((point, i) => (
           <circle
             key={i}
