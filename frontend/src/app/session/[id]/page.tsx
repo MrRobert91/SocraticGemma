@@ -67,14 +67,13 @@ export default function SessionPage() {
     sendMessage(sessionId, inputText);
     setInputText('');
     setIsTyping(true);
-    // Restore focus to textarea after state update
-    setTimeout(() => textareaRef.current?.focus(), 0);
   }, [inputText, isTyping, sessionId, sendMessage]);
 
   // Handle streaming complete
   useEffect(() => {
-    if (status === 'complete') {
+    if (status === 'complete' || status === 'error') {
       setIsTyping(false);
+      textareaRef.current?.focus();
     }
   }, [status]);
 
@@ -182,6 +181,7 @@ export default function SessionPage() {
           <div className="flex gap-3">
             <textarea
               ref={textareaRef}
+              autoFocus
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
