@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS, getScoreColor, getScoreBgColor } from '@/lib/types';
+import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, QUESTION_TYPE_COLORS } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -25,14 +25,6 @@ const AGE_LABELS: Record<string, string> = {
   '6-8': '6–8 años',
   '9-12': '9–12 años',
   '13-16': '13–16 años',
-};
-
-const FORBIDDEN_LABELS: Record<string, string> = {
-  overhelp: '🤝 Ayuda excesiva',
-  lecture:  '📖 Explicación',
-  correct:  '✏️ Corrección',
-  leading:  '➡️ Pregunta dirigida',
-  closed:   '🔒 Pregunta cerrada',
 };
 
 function formatDate(ts: number): string {
@@ -86,51 +78,6 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
               >
                 {QUESTION_TYPE_LABELS[turn.question_type as QuestionType] ?? turn.question_type}
               </span>
-            )}
-
-            {/* Scores */}
-            {turn.eval_scores && (
-              <div className="flex flex-wrap gap-1">
-                {(
-                  ['socratism', 'age_fit', 'builds_on', 'openness', 'advancement'] as const
-                ).map((key) => {
-                  const val = turn.eval_scores[key];
-                  const labels: Record<string, string> = {
-                    socratism: 'Socrático',
-                    age_fit: 'Edad',
-                    builds_on: 'Hilo',
-                    openness: 'Abierta',
-                    advancement: 'Avance',
-                  };
-                  return (
-                    <div
-                      key={key}
-                      className={`inline-flex flex-col items-center px-2 py-1 rounded-lg ${getScoreBgColor(val)}`}
-                    >
-                      <span className={`text-sm font-bold leading-tight ${getScoreColor(val)}`}>
-                        {val?.toFixed(1)}
-                      </span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
-                        {labels[key]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Forbidden behaviours */}
-            {turn.forbidden_behaviors_detected?.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {turn.forbidden_behaviors_detected.map((b) => (
-                  <span
-                    key={b}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
-                  >
-                    {FORBIDDEN_LABELS[b] ?? b}
-                  </span>
-                ))}
-              </div>
             )}
 
             {/* Thinking trace toggle */}
