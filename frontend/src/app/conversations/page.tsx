@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ConversationSummary, ConversationsPage } from '@/lib/types';
+import { ConversationSummary, type ConversationsPage } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
