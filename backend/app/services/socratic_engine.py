@@ -135,53 +135,35 @@ class SocraticEngine:
         # Step 3: Stream via GemmaClient
         thinking_buffer = ""
         content_buffer = ""
-        in_thinking = False
+        session_thinking_mode = getattr(session, 'thinking_mode', True)
 
         try:
-            async for chunk in gemma_client.generate(
+            async for evt_type, chunk in gemma_client.generate(
                 prompt=prompt,
                 model_name=model_name,
                 max_tokens=500,
                 streaming=True,
-                thinking_mode=False  # thinking_mode handled by tag detection, not API
+                thinking_mode=session_thinking_mode
             ):
-                if chunk:
-                    if "<|start_of_thought|>" in chunk or in_thinking:
-                        in_thinking = True
-                        thinking_buffer += chunk
-                        if "<|end_of_thought|>" in chunk:
-                            in_thinking = False
-                            thinking_buffer = re.sub(
-                                r'<\|start_of_thought\|>(.*?)<\|end_of_thought\|>',
-                                r'\1',
-                                thinking_buffer,
-                                flags=re.DOTALL
-                            )
-                        yield {"type": "thinking", "trace": chunk}
-                    else:
-                        # Accumulate content — do NOT stream tokens yet,
-                        # because the model outputs JSON that must be parsed first.
-                        content_buffer += chunk
+                if not chunk:
+                    continue
+                if evt_type == "thinking":
+                    thinking_buffer += chunk
+                    yield {"type": "thinking", "trace": chunk}
+                else:
+                    # Accumulate content — do NOT stream tokens yet,
+                    # because the model outputs JSON that must be parsed first.
+                    content_buffer += chunk
         except Exception as exc:
             import logging
             logging.error("Error streaming from model: %s", exc)
             yield {"type": "error", "message": str(exc)}
             return
 
-        # Clean the thinking trace (remove tags if still present)
-        thinking_trace = re.sub(
-            r'<\|start_of_thought\|>|<\|end_of_thought\|>',
-            '',
-            thinking_buffer
-        ).strip()
-        
-        # Clean any remaining thought tags from content
-        final_content = re.sub(
-            r'<\|start_of_thought\|>.*?<\|end_of_thought\|>',
-            '',
-            content_buffer,
-            flags=re.DOTALL
-        ).strip()
+        # thinking_buffer and content_buffer are already clean (no inline tags)
+        # because the API returns thinking/content in separate delta fields.
+        thinking_trace = thinking_buffer.strip()
+        final_content = content_buffer.strip()
 
         # Parse JSON response from model (output_format prompt returns JSON)
         detected_question_type: Optional[str] = None

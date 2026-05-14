@@ -69,26 +69,26 @@ async def compare_responses(request: CompareRequest) -> CompareResponse:
     
     # Generate baseline response
     baseline_content = ""
-    async for chunk in gemma_client.generate(
+    async for evt_type, chunk in gemma_client.generate(
         prompt=baseline_prompt,
         model_name=model_name,
         max_tokens=300,
         streaming=True,
         thinking_mode=request.thinking_mode
     ):
-        if chunk and "<think>" not in chunk:
+        if chunk and evt_type == "content":
             baseline_content += chunk
-    
+
     # Generate P4C response
     p4c_content = ""
-    async for chunk in gemma_client.generate(
+    async for evt_type, chunk in gemma_client.generate(
         prompt=p4c_prompt,
         model_name=model_name,
         max_tokens=300,
         streaming=True,
         thinking_mode=request.thinking_mode
     ):
-        if chunk and "<think>" not in chunk:
+        if chunk and evt_type == "content":
             p4c_content += chunk
     
     # Evaluate both in parallel

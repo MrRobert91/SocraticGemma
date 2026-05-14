@@ -135,10 +135,10 @@ class GemmaClient:
                             continue
                         if "choices" in chunk and len(chunk["choices"]) > 0:
                             delta = chunk["choices"][0].get("delta", {})
-                            if "thinking" in delta:
-                                yield delta["thinking"]
-                            if "content" in delta and delta["content"]:
-                                yield delta["content"]
+                            if delta.get("thinking"):
+                                yield ("thinking", delta["thinking"])
+                            if delta.get("content"):
+                                yield ("content", delta["content"])
                     return  # success
             except httpx.HTTPStatusError:
                 if attempt == _MAX_RETRIES - 1:
@@ -169,10 +169,10 @@ class GemmaClient:
         full_response = ""
         
         # Collect the full response
-        async for chunk in self.generate(
+        async for _evt, text in self.generate(
             prompt, model_name, max_tokens, streaming=True, thinking_mode=thinking_mode
         ):
-            full_response += chunk
+            full_response += text
         
         # Extract thinking trace from <think> tags
         thinking_match = re.search(
