@@ -71,7 +71,7 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
           </div>
         )}
 
-        {/* RAG moves used */
+        {/* RAG moves used */}
         {turn.rag_moves_used && turn.rag_moves_used.length > 0 && (
           <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             📚 Movimientos RAG: {turn.rag_moves_used.join(', ')}
