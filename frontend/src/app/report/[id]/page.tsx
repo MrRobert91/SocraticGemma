@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Script from 'next/script';
 import { useReport } from '@/hooks/useReport';
 
 // Simple markdown-to-HTML renderer (no external lib needed for basic structure)
@@ -35,42 +34,47 @@ export default function ReportPage() {
 
   const { content, status, error, loadReport, generateReport } = useReport();
   const reportRef = useRef<HTMLDivElement>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
 
   // On mount: try to load existing report
   useEffect(() => {
     loadReport(sessionId);
   }, [sessionId, loadReport]);
 
-  const handleDownloadPdf = useCallback(async () => {
-    if (!reportRef.current || !content) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const html2pdf = (window as any).html2pdf;
-    if (!html2pdf) { alert('El generador de PDF aún se está cargando. Intenta de nuevo en un momento.'); return; }
-    setPdfLoading(true);
-    try {
-      await html2pdf()
-        .set({
-          margin: [15, 15, 15, 15],
-          filename: `perfil-filosofico-${sessionId.slice(0, 8)}.pdf`,
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(reportRef.current)
-        .save();
-    } catch (e) {
-      console.error('PDF export failed', e);
-    } finally {
-      setPdfLoading(false);
+  const handleDownloadPdf = useCallback(() => {
+    if (!content) return;
+    const reportHtml = renderMarkdown(content);
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) {
+      alert('Tu navegador bloqu\u00e9 la ventana emergente. Permite ventanas emergentes para este sitio e int\u00e9ntalo de nuevo.');
+      return;
     }
-  }, [content, sessionId]);
+    w.document.write(`<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Perfil Filos\u00f3fico</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; max-width: 780px; margin: 40px auto; padding: 0 32px 60px; color: #111827; line-height: 1.75; }
+    h1 { font-size: 1.6rem; color: #1e1b4b; border-bottom: 2px solid #4338ca; padding-bottom: 8px; margin: 2rem 0 1rem; }
+    h2 { font-size: 1.25rem; color: #3730a3; border-bottom: 1px solid #c7d2fe; padding-bottom: 4px; margin: 2rem 0 0.75rem; }
+    h3 { font-size: 1.05rem; color: #4338ca; margin: 1.5rem 0 0.5rem; }
+    p { margin-bottom: 0.9rem; }
+    ul { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.3rem; }
+    strong { font-weight: 700; }
+    em { font-style: italic; }
+    hr { border: none; border-top: 1px solid #e0e7ff; margin: 1.5rem 0; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>${reportHtml}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }, [content]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-        strategy="lazyOnload"
-      />
       {/* Header */}
       <header className="border-b border-indigo-200 dark:border-indigo-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -94,10 +98,9 @@ export default function ReportPage() {
             {status === 'complete' && content && (
               <button
                 onClick={handleDownloadPdf}
-                disabled={pdfLoading}
-                className="px-3 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 disabled:bg-gray-400 transition-colors"
+                className="px-3 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
               >
-                {pdfLoading ? '⏳ Generando…' : '⬇️ Descargar PDF'}
+                🖨️ Imprimir / PDF
               </button>
             )}
           </div>
@@ -181,10 +184,9 @@ export default function ReportPage() {
               </button>
               <button
                 onClick={handleDownloadPdf}
-                disabled={pdfLoading}
-                className="px-5 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 disabled:bg-gray-400 transition-colors"
+                className="px-5 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
               >
-                {pdfLoading ? '⏳ Generando PDF…' : '⬇️ Descargar PDF'}
+                🖨️ Imprimir / PDF
               </button>
             </div>
           </div>
