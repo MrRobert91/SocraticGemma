@@ -19,6 +19,9 @@ services:
       - DEBUG_PROMPTS=${DEBUG_PROMPTS:-false}
       - EVALUATOR_MODEL=${EVALUATOR_MODEL:-google/gemma-4-e2b-it}
       - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      - DB_PATH=${DB_PATH:-/data/conversations.db}
+    volumes:
+      - db_data:/data
     networks:
       - socratic-gamma
     restart: unless-stopped
@@ -49,3 +52,6 @@ services:
 networks:
   socratic-gamma:
     driver: bridge
+
+volumes:
+  db_data:
