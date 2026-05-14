@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from ..models import Session, Turn
 from ..schemas import CreateSessionRequest, SessionResponse, TurnResponse, EvalScoresResponse
 from ..services.session_store import session_store
+from ..database import save_session as db_save_session
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -52,7 +53,21 @@ async def create_session(request: CreateSessionRequest) -> dict:
     session.thinking_mode = request.thinking_mode
     
     session_store.create_session(session)
-    
+
+    # Persist to SQLite (fire-and-forget; failures are non-fatal)
+    try:
+        await db_save_session(
+            session_id=session_id,
+            age_group=request.age_group,
+            stimulus=request.stimulus.model_dump(),
+            model_size=request.model_size,
+            language=request.language,
+            created_at=time.time(),
+        )
+    except Exception as exc:  # noqa: BLE001
+        import logging
+        logging.warning("Could not persist session to DB: %s", exc)
+
     return {"session_id": session_id}
 
 

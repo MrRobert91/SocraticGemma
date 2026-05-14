@@ -72,6 +72,12 @@ export default function HomePage() {
             >
               Comparar
             </a>
+            <a
+              href="/conversations"
+              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400"
+            >
+              Conversaciones
+            </a>
           </nav>
         </div>
       </header>

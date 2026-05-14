@@ -34,6 +34,7 @@ class Turn:
     id: int
     content: str
     question_type: str
+    child_input: str = ""
     thinking_trace: str = ""
     eval_scores: EvalScores = field(default_factory=EvalScores)
     forbidden_behaviors_detected: list[str] = field(default_factory=list)

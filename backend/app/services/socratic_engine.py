@@ -217,6 +217,7 @@ class SocraticEngine:
             id=len(session.turns),
             content=final_content,
             question_type=question_type,
+            child_input=child_input,
             thinking_trace=thinking_trace,
             eval_scores=eval_scores,
             forbidden_behaviors_detected=forbidden_behaviors,
@@ -226,6 +227,31 @@ class SocraticEngine:
         
         # Step 6: Append turn (only once!)
         session_store.append_turn(session_id, turn)
+
+        # Persist turn to SQLite (fire-and-forget)
+        try:
+            from ..database import save_turn as db_save_turn
+            await db_save_turn(
+                session_id=session_id,
+                turn_index=turn.id,
+                child_input=child_input,
+                content=turn.content,
+                question_type=turn.question_type,
+                thinking_trace=turn.thinking_trace,
+                eval_socratism=eval_scores.socratism,
+                eval_age_fit=eval_scores.age_fit,
+                eval_builds_on=eval_scores.builds_on,
+                eval_openness=eval_scores.openness,
+                eval_advancement=eval_scores.advancement,
+                eval_overall=eval_scores.overall,
+                eval_weighted=eval_scores.weighted_overall(),
+                forbidden_behaviors=forbidden_behaviors,
+                rag_moves_used=rag_moves_used,
+                timestamp=turn.timestamp,
+            )
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.warning("Could not persist turn to DB: %s", exc)
         
         # Update phase markers
         if current_phase in session.phases:

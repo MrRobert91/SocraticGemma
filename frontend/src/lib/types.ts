@@ -219,3 +219,48 @@ export function getScoreBgColor(score: number): string {
   if (score >= 3) return 'bg-amber-50 dark:bg-amber-900/30';
   return 'bg-rose-50 dark:bg-rose-900/30';
 }
+
+// ─── Conversations (persisted) ────────────────────────────────────────────────
+
+export interface ConversationSummary {
+  id: string;
+  age_group: AgeGroup;
+  stimulus: Stimulus;
+  model_size: string;
+  language: string;
+  created_at: number;
+  updated_at: number;
+  turn_count: number;
+}
+
+export interface ConversationsPage {
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+  items: ConversationSummary[];
+}
+
+export interface ConversationTurn {
+  id: number;
+  turn_index: number;
+  child_input: string;
+  content: string;
+  question_type: QuestionType;
+  thinking_trace: string;
+  eval_scores: EvalScores;
+  forbidden_behaviors_detected: string[];
+  rag_moves_used: string[];
+  timestamp: number;
+}
+
+export interface ConversationDetail {
+  id: string;
+  age_group: AgeGroup;
+  stimulus: Stimulus;
+  model_size: string;
+  language: string;
+  created_at: number;
+  updated_at: number;
+  turns: ConversationTurn[];
+}

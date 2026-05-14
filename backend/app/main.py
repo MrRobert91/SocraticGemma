@@ -10,8 +10,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router
+from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router, conversations
 from .services.session_store import session_store
+from .database import init_db
 from .config import settings
 
 
@@ -40,7 +41,10 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     global _cleanup_task
-    
+
+    # Startup: initialise SQLite schema
+    await init_db()
+
     # Startup: start cleanup task
     _cleanup_task = asyncio.create_task(session_cleanup_task())
     print("SocraticGemma API started")
@@ -107,6 +111,7 @@ app.include_router(compare.router)
 app.include_router(prompts.router)
 app.include_router(health.router)
 app.include_router(rag_router.router)
+app.include_router(conversations.router)
 
 
 @app.get("/", tags=["root"])
