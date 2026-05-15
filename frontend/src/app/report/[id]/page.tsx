@@ -55,9 +55,9 @@ export default function ReportPage() {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, serif; max-width: 780px; margin: 40px auto; padding: 0 32px 60px; color: #111827; line-height: 1.75; }
-    h1 { font-size: 1.6rem; color: #1e1b4b; border-bottom: 2px solid #4338ca; padding-bottom: 8px; margin: 2rem 0 1rem; }
-    h2 { font-size: 1.25rem; color: #3730a3; border-bottom: 1px solid #c7d2fe; padding-bottom: 4px; margin: 2rem 0 0.75rem; }
-    h3 { font-size: 1.05rem; color: #4338ca; margin: 1.5rem 0 0.5rem; }
+    h1 { font-size: 1.6rem; color: #065f46; border-bottom: 2px solid #059669; padding-bottom: 8px; margin: 2rem 0 1rem; }
+    h2 { font-size: 1.25rem; color: #047857; border-bottom: 1px solid #6ee7b7; padding-bottom: 4px; margin: 2rem 0 0.75rem; }
+    h3 { font-size: 1.05rem; color: #059669; margin: 1.5rem 0 0.5rem; }
     p { margin-bottom: 0.9rem; }
     ul { padding-left: 1.5rem; margin-bottom: 0.9rem; }
     li { margin-bottom: 0.3rem; }
