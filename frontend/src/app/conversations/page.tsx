@@ -183,7 +183,6 @@ export default function ConversationsPage() {
           </Link>
           <nav className="flex gap-2" aria-label="Navegación principal">
             <Link href="/"        className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
-            <Link href="/compare" className="neo-btn-ghost px-3 py-1.5 text-sm">Comparar</Link>
             <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">Conversaciones</Link>
           </nav>
         </div>

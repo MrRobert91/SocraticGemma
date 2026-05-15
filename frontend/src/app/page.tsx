@@ -66,7 +66,6 @@ export default function HomePage() {
             </span>
           </div>
           <nav className="flex gap-2" aria-label="Navegación principal">
-            <a href="/compare"       className="neo-btn-ghost px-3 py-1.5 text-sm">Comparar</a>
             <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">Conversaciones</a>
           </nav>
         </div>

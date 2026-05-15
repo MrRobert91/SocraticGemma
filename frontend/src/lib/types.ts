@@ -122,20 +122,6 @@ export interface EvalSummary {
   forbidden_behaviors_by_turn: Record<string, string[]>;
 }
 
-// ─── Compare response ─────────────────────────────────────────────────────────
-
-export interface CompareResponseItem {
-  content: string;
-  scores: EvalScores;
-  prompt_used: string;
-}
-
-export interface CompareResponse {
-  base_response: CompareResponseItem;
-  p4c_response: CompareResponseItem;
-  improvement_pct: number;
-}
-
 // ─── Presets ──────────────────────────────────────────────────────────────────
 
 export interface Preset {
