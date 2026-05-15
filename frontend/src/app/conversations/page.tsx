@@ -143,6 +143,10 @@ function Pagination({
   );
 }
 
+function stripFrontmatter(md: string): string {
+  return md.replace(/^---[\s\S]*?---\s*/m, '').trim();
+}
+
 export default function ConversationsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -151,6 +155,7 @@ export default function ConversationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useWikiProfile();
+  const [profileExpanded, setProfileExpanded] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -233,9 +238,25 @@ export default function ConversationsPage() {
                 Ver wiki completa →
               </Link>
             </div>
-            <p className="text-sm text-[var(--muted)] leading-relaxed line-clamp-4 whitespace-pre-line">
-              {profile.summary}
-            </p>
+
+            {profileExpanded ? (
+              <div className="text-sm text-[var(--text)] leading-relaxed whitespace-pre-line max-h-[60vh] overflow-y-auto pr-2 border-t-2 border-dashed border-[var(--border)] pt-3">
+                {stripFrontmatter(profile.content ?? profile.summary ?? '')}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--muted)] leading-relaxed line-clamp-4 whitespace-pre-line">
+                {profile.summary}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setProfileExpanded(v => !v)}
+              className="neo-btn-ghost mt-3 px-3 py-1.5 text-xs font-bold"
+              aria-expanded={profileExpanded}
+            >
+              {profileExpanded ? '▲ Mostrar menos' : '▼ Leer perfil completo'}
+            </button>
           </div>
         )}
 

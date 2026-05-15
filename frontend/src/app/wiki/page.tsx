@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ReactFlow,
@@ -208,9 +208,17 @@ function WikiGraphInner() {
     refetchStatus();
   }, [refetchGraph, refetchStatus]);
 
-  const flowNodes: Node[] = graph ? layoutNodes(graph.nodes) : [];
-  const flowEdges: Edge[] = graph
-    ? graph.edges.map(e => ({
+  // useNodesState only initialises once. Without the effect below the canvas
+  // stays empty forever because the graph hook loads asynchronously and the
+  // initial flowNodes/flowEdges are `[]`.
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  useEffect(() => {
+    if (!graph) return;
+    setNodes(layoutNodes(graph.nodes));
+    setEdges(
+      graph.edges.map(e => ({
         id: `${e.source}-${e.target}`,
         source: e.source,
         target: e.target,
@@ -219,11 +227,9 @@ function WikiGraphInner() {
         style: { stroke: '#aaa', strokeWidth: 1.5 },
         label: e.relation !== 'related' ? e.relation : undefined,
         labelStyle: { fontSize: 9, fill: '#777' },
-      }))
-    : [];
-
-  const [nodes, , onNodesChange] = useNodesState(flowNodes);
-  const [edges, , onEdgesChange] = useEdgesState(flowEdges);
+      })),
+    );
+  }, [graph, setNodes, setEdges]);
 
   const onNodeClick: NodeMouseHandler = useCallback((_evt, node) => {
     setSelectedSlug((node.data as unknown as WikiNode).slug);

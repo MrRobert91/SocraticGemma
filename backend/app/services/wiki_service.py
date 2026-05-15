@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 # Base path for user wiki files on the persistent volume
 _DATA_ROOT = Path(os.environ.get("DATA_ROOT", "/data"))
 
+# In-flight synthesis dedup. The dialogue end-of-session hook and the report
+# endpoint both trigger synthesis for the same session a few seconds apart;
+# without this set, both calls run in parallel, double the LLM cost, and
+# write half-baked pages over each other.
+_SYNTHESIS_IN_PROGRESS: set[str] = set()
+
 def _get_wiki_model() -> str:
     """Return the wiki LLM model name, falling back to gemma_model_fast."""
     return settings.wiki_model or settings.gemma_model_fast
@@ -268,6 +274,15 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
     4. Run synthesis LLM call → page content
     5. Write pages to disk, upsert DB records, sync edges
     """
+    # Dedup: dialogue + report triggers race within seconds of each other.
+    if session_id in _SYNTHESIS_IN_PROGRESS:
+        logger.info(
+            "[WIKI] SKIP — synthesis already running for session %s",
+            session_id,
+        )
+        return
+    _SYNTHESIS_IN_PROGRESS.add(session_id)
+
     start_ts = time.time()
     logger.info("=" * 70)
     logger.info(
@@ -311,19 +326,15 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         )
         logger.info("[WIKI]   extraction prompt: %d chars", len(extraction_prompt))
 
-        extraction_json = await _llm_call_non_streaming(extraction_prompt, max_tokens=2048)
-        if not extraction_json.strip():
-            logger.error("[WIKI] ABORT: extraction LLM returned empty response")
-            _dump_failure(session_id, "extraction-empty", extraction_prompt, extraction_json)
-            return
-
-        extraction = _parse_json_response(extraction_json)
+        extraction = await _llm_call_json(
+            extraction_prompt,
+            stage="extraction",
+            session_id=session_id,
+            max_tokens=2048,
+            max_attempts=2,
+        )
         if extraction is None:
-            logger.error(
-                "[WIKI] ABORT: extraction returned invalid JSON. Raw (first 800): %s",
-                extraction_json[:800],
-            )
-            _dump_failure(session_id, "extraction-bad-json", extraction_prompt, extraction_json)
+            logger.error("[WIKI] ABORT: extraction failed after retries")
             return
         logger.info(
             "[WIKI]   extraction parsed OK — topics=%d, streams=%d, open_questions=%d, contradictions=%d",
@@ -349,19 +360,15 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         )
         logger.info("[WIKI]   synthesis prompt: %d chars", len(synthesis_prompt))
 
-        synthesis_json = await _llm_call_non_streaming(synthesis_prompt, max_tokens=8192)
-        if not synthesis_json.strip():
-            logger.error("[WIKI] ABORT: synthesis LLM returned empty response")
-            _dump_failure(session_id, "synthesis-empty", synthesis_prompt, synthesis_json)
-            return
-
-        synthesis = _parse_json_response(synthesis_json)
+        synthesis = await _llm_call_json(
+            synthesis_prompt,
+            stage="synthesis",
+            session_id=session_id,
+            max_tokens=8192,
+            max_attempts=2,
+        )
         if synthesis is None:
-            logger.error(
-                "[WIKI] ABORT: synthesis returned invalid JSON. Length=%d. Raw (first 1500): %s",
-                len(synthesis_json), synthesis_json[:1500],
-            )
-            _dump_failure(session_id, "synthesis-bad-json", synthesis_prompt, synthesis_json)
+            logger.error("[WIKI] ABORT: synthesis failed after retries")
             return
         logger.info(
             "[WIKI]   synthesis parsed OK — pages=%d, has_profile=%s",
@@ -426,6 +433,8 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             "[WIKI] UNHANDLED EXCEPTION  user=%s  session=%s",
             user_id, session_id,
         )
+    finally:
+        _SYNTHESIS_IN_PROGRESS.discard(session_id)
 
 
 # ─── LLM helpers ─────────────────────────────────────────────────────────────
@@ -450,6 +459,49 @@ async def _llm_call_non_streaming(prompt: str, max_tokens: int = 4096) -> str:
         model, max_tokens, len(response), time.time() - t0,
     )
     return response
+
+
+async def _llm_call_json(
+    prompt: str,
+    *,
+    stage: str,
+    session_id: str,
+    max_tokens: int,
+    max_attempts: int = 2,
+) -> Optional[dict]:
+    """Call the LLM and parse the response as JSON, retrying on failure.
+
+    Gemma occasionally stops generating mid-array (no token-limit hit, the
+    provider just terminates the stream early). Retrying once is cheaper and
+    more reliable than trying to repair truncated JSON.
+
+    Returns the parsed dict, or None if every attempt failed.
+    """
+    last_raw = ""
+    for attempt in range(1, max_attempts + 1):
+        raw = await _llm_call_non_streaming(prompt, max_tokens=max_tokens)
+        last_raw = raw
+        if not raw.strip():
+            logger.warning(
+                "[WIKI]   %s attempt %d/%d: empty response, retrying",
+                stage, attempt, max_attempts,
+            )
+            continue
+        parsed = _parse_json_response(raw)
+        if parsed is not None:
+            if attempt > 1:
+                logger.info(
+                    "[WIKI]   %s recovered on attempt %d/%d",
+                    stage, attempt, max_attempts,
+                )
+            return parsed
+        logger.warning(
+            "[WIKI]   %s attempt %d/%d: JSON invalid (%d chars)%s",
+            stage, attempt, max_attempts, len(raw),
+            ", retrying" if attempt < max_attempts else " — giving up",
+        )
+    _dump_failure(session_id, f"{stage}-bad-json", prompt, last_raw)
+    return None
 
 
 def _parse_json_response(text: str) -> Optional[dict]:
