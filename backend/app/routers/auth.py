@@ -110,7 +110,7 @@ async def me(user: Annotated[dict, Depends(get_required_user)]) -> dict:
     return {"id": user["id"], "email": user["email"], "preferred_language": user.get("preferred_language", "es")}
 
 
-_ALLOWED_LANGUAGES = {"es", "en", "ca", "gl"}
+_ALLOWED_LANGUAGES = {"es", "en"}
 
 
 class PreferencesRequest(BaseModel):

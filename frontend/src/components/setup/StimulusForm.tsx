@@ -1,49 +1,27 @@
 'use client';
 
 import { Stimulus } from '@/lib/types';
+import { getTranslations, LangCode } from '@/lib/i18n';
 
 interface StimulusFormProps {
   stimulus: Stimulus;
   onChange: (stimulus: Stimulus) => void;
+  lang?: LangCode;
 }
 
-const STIMULUS_META: Record<string, {
-  icon: string;
-  label: string;
-  tooltip: string;
-  titlePlaceholder: string;
-  contentPlaceholder: string;
-}> = {
-  question: {
-    icon: '❓',
-    label: 'Pregunta',
-    tooltip: 'Una pregunta abierta sin respuesta única que invita a reflexionar y argumentar. Ideal para explorar conceptos filosóficos.',
-    titlePlaceholder: 'ej: ¿Qué es la justicia?',
-    contentPlaceholder: '¿Es posible ser completamente justo con todo el mundo al mismo tiempo?',
-  },
-  scenario: {
-    icon: '🎭',
-    label: 'Escenario',
-    tooltip: 'Una situación hipotética o dilema ético donde los participantes deben tomar decisiones y razonar sobre sus consecuencias.',
-    titlePlaceholder: 'ej: El tranvía descontrolado',
-    contentPlaceholder: 'Un tranvía sin frenos se dirige hacia cinco personas atadas a la vía. Puedes accionar una palanca para desviarlo, pero entonces atropellará a una persona. ¿Qué harías?',
-  },
-  story: {
-    icon: '📖',
-    label: 'Historia',
-    tooltip: 'Un relato corto con personajes y situaciones que esconden preguntas filosóficas. Facilita la discusión a través de la narrativa.',
-    titlePlaceholder: 'ej: El barco de Teseo',
-    contentPlaceholder: 'Cada año, los atenienses sustituían las tablas podridas del barco de Teseo. Con el tiempo, no quedaba ninguna tabla original. ¿Sigue siendo el mismo barco?',
-  },
-};
-
-export function StimulusForm({ stimulus, onChange }: StimulusFormProps) {
+export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormProps) {
+  const t = getTranslations(lang);
+  const STIMULUS_META = {
+    question: t.stimulusQuestion,
+    scenario: t.stimulusScenario,
+    story: t.stimulusStory,
+  };
   const meta = STIMULUS_META[stimulus.type] ?? STIMULUS_META.question;
 
   return (
     <div className="space-y-4">
       <div>
-        <span className="neo-label">Tipo de estímulo</span>
+        <span className="neo-label">{t.stimulusTypeLabel}</span>
         <div className="flex gap-2 flex-wrap">
           {Object.entries(STIMULUS_META).map(([value, m]) => (
             <div key={value} className="relative group">
@@ -80,8 +58,8 @@ export function StimulusForm({ stimulus, onChange }: StimulusFormProps) {
 
       <div>
         <label className="neo-label" htmlFor="stimulus-title">
-          Título{' '}
-          <span className="font-normal normal-case tracking-normal text-[var(--muted)]">(opcional)</span>
+          {t.stimulusTitleLabel}{' '}
+          <span className="font-normal normal-case tracking-normal text-[var(--muted)]">{t.stimulusTitleOptional}</span>
         </label>
         <input
           id="stimulus-title"
@@ -95,7 +73,7 @@ export function StimulusForm({ stimulus, onChange }: StimulusFormProps) {
 
       <div>
         <label className="neo-label" htmlFor="stimulus-content">
-          Contenido
+          {t.stimulusContentLabel}
         </label>
         <textarea
           id="stimulus-content"

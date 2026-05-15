@@ -2,20 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AgeGroup, Stimulus, CreateSessionRequest, PRESETS, Preset } from '@/lib/types';
+import { AgeGroup, Stimulus, CreateSessionRequest, Preset } from '@/lib/types';
 import { AgeSelector } from '@/components/setup/AgeSelector';
 import { StimulusForm } from '@/components/setup/StimulusForm';
 import { Presets } from '@/components/setup/Presets';
 import { useSession } from '@/hooks/useSession';
 import { useAuth } from '@/context/AuthContext';
+import { getTranslations, LangCode } from '@/lib/i18n';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
 const LANGUAGE_LABELS: Record<string, string> = {
   es: 'ES',
   en: 'EN',
-  ca: 'CA',
-  gl: 'GL',
 };
 
 export default function HomePage() {
@@ -34,6 +33,8 @@ export default function HomePage() {
   const [language, setLanguage] = useState('es');
   const [totalTurns, setTotalTurns] = useState(10);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const t = getTranslations(language as LangCode);
 
   // Initialize language from user preference
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function HomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stimulus.content.trim()) {
-      alert('Por favor, introduce un estímulo o pregunta');
+      alert(t.errorStimulusRequired);
       return;
     }
     try {
@@ -108,7 +109,7 @@ export default function HomePage() {
             {!authLoading && (
               user ? (
                 <>
-                  <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">Conversaciones</a>
+                  <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">{t.navConversations}</a>
                   <span className="hidden sm:block text-xs text-[var(--muted)] font-semibold truncate max-w-[140px]">
                     {user.email}
                   </span>
@@ -116,13 +117,13 @@ export default function HomePage() {
                     onClick={() => logout()}
                     className="neo-btn-ghost px-3 py-1.5 text-sm"
                   >
-                    Salir
+                    {t.navLogout}
                   </button>
                 </>
               ) : (
                 <>
-                  <a href="/login" className="neo-btn-ghost px-3 py-1.5 text-sm">Iniciar sesión</a>
-                  <a href="/register" className="neo-btn px-3 py-1.5 text-sm">Registrarse</a>
+                  <a href="/login" className="neo-btn-ghost px-3 py-1.5 text-sm">{t.navLogin}</a>
+                  <a href="/register" className="neo-btn px-3 py-1.5 text-sm">{t.navRegister}</a>
                 </>
               )
             )}
@@ -134,11 +135,10 @@ export default function HomePage() {
         {/* ─── Hero ──────────────────────────────────────────── */}
         <div className="mb-10 animate-fade-up">
           <h1 className="text-4xl md:text-5xl font-black text-[var(--text)] leading-tight mb-4">
-            La IA que pregunta<br />en lugar de responder.
+            {t.heroTitleLine1}<br />{t.heroTitleLine2}
           </h1>
           <p className="text-lg text-[var(--muted)] max-w-2xl">
-            SocraticGemma usa el método socrático para guiar a niños y adolescentes
-            en la exploración de ideas filosóficas a través del diálogo.
+            {t.heroSubtitle}
           </p>
         </div>
 
@@ -146,18 +146,18 @@ export default function HomePage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Age selector */}
           <section className="neo-card p-6 animate-fade-up">
-            <AgeSelector value={ageGroup} onChange={setAgeGroup} />
+            <AgeSelector value={ageGroup} onChange={setAgeGroup} lang={language as LangCode} />
           </section>
 
           {/* Stimulus form */}
           <section className="neo-card p-6 animate-fade-up">
-            <h2 className="neo-label">💬 Tu pregunta o escenario</h2>
-            <StimulusForm stimulus={stimulus} onChange={setStimulus} />
+            <h2 className="neo-label">{t.stimulusSectionHeader}</h2>
+            <StimulusForm stimulus={stimulus} onChange={setStimulus} lang={language as LangCode} />
           </section>
 
           {/* Presets */}
           <section className="neo-card p-6 animate-fade-up">
-            <Presets selectedAge={ageGroup} onSelect={handlePresetSelect} />
+            <Presets selectedAge={ageGroup} onSelect={handlePresetSelect} lang={language as LangCode} />
           </section>
 
           {/* Advanced options */}
@@ -169,7 +169,7 @@ export default function HomePage() {
               aria-expanded={showAdvanced}
             >
               <span className="font-black text-sm uppercase tracking-widest text-[var(--text)]">
-                ⚙️ Opciones avanzadas
+                {t.advancedOptionsLabel}
               </span>
               <span
                 aria-hidden="true"
@@ -190,7 +190,7 @@ export default function HomePage() {
                       className="w-4 h-4 rounded border-2 border-black"
                       style={{ accentColor: 'var(--accent-dark)' }}
                     />
-                    📚 RAG habilitado
+                    {t.ragLabel}
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
                     <input
@@ -200,15 +200,15 @@ export default function HomePage() {
                       className="w-4 h-4 rounded border-2 border-black"
                       style={{ accentColor: 'var(--accent-dark)' }}
                     />
-                    🧠 Mostrar razonamiento
+                    {t.thinkingLabel}
                   </label>
                 </div>
 
                 <div>
                   <label className="neo-label">
-                    💬 Duración:{' '}
+                    {t.durationLabel}{' '}
                     <span className="font-black" style={{ color: 'var(--accent-dark)' }}>
-                      {totalTurns} turnos
+                      {totalTurns} {t.durationUnit}
                     </span>
                   </label>
                   <input
@@ -220,7 +220,7 @@ export default function HomePage() {
                     onChange={(e) => setTotalTurns(Number(e.target.value))}
                     className="w-full h-2 cursor-pointer"
                     style={{ accentColor: 'var(--accent-dark)' }}
-                    aria-label={`Duración de la conversación: ${totalTurns} turnos`}
+                    aria-label={`${t.durationLabel} ${totalTurns} ${t.durationUnit}`}
                   />
                   <div className="flex justify-between text-xs font-bold text-[var(--muted)] mt-1">
                     <span>5</span>
@@ -255,17 +255,17 @@ export default function HomePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Creando sesión...
+                {t.submitLoading}
               </>
             ) : (
-              '🚀 Iniciar diálogo socrático'
+              t.submitLabel
             )}
           </button>
         </form>
       </main>
 
       <footer className="max-w-4xl mx-auto px-4 py-8 mt-8 border-t-2 border-[var(--border)] text-center text-sm text-[var(--muted)]">
-        SocraticGemma usa Google Gemma 2 para generar preguntas socráticas adaptadas a cada edad.
+        {t.footer}
       </footer>
     </div>
   );
