@@ -31,7 +31,7 @@ export default function HomePage() {
   const [ragEnabled, setRagEnabled] = useState(true);
   const [thinkingMode, setThinkingMode] = useState(true);
   const [language, setLanguage] = useState('es');
-  const [totalTurns, setTotalTurns] = useState(10);
+  const [totalTurns, setTotalTurns] = useState(5);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const t = getTranslations(language as LangCode);
@@ -213,9 +213,9 @@ export default function HomePage() {
                   </label>
                   <input
                     type="range"
-                    min={5}
+                    min={1}
                     max={50}
-                    step={5}
+                    step={1}
                     value={totalTurns}
                     onChange={(e) => setTotalTurns(Number(e.target.value))}
                     className="w-full h-2 cursor-pointer"
@@ -223,7 +223,7 @@ export default function HomePage() {
                     aria-label={`${t.durationLabel} ${totalTurns} ${t.durationUnit}`}
                   />
                   <div className="flex justify-between text-xs font-bold text-[var(--muted)] mt-1">
-                    <span>5</span>
+                    <span>1</span>
                     <span>50</span>
                   </div>
                 </div>

@@ -52,7 +52,7 @@ class Session:
     thinking_mode: bool = True  # Show/hide Gemma 4 thinking trace
     language: str = "en"
     turns: list[Turn] = field(default_factory=list)
-    total_turns: int = 20
+    total_turns: int = 5
     phases: dict = field(default_factory=lambda: {
         "stimulus": False,
         "questions": False,

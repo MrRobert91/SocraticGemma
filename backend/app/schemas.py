@@ -42,8 +42,10 @@ class CreateSessionRequest(BaseModel):
         description="Language code for the dialogue"
     )
     total_turns: int = Field(
-        default=20,
-        description="Planned number of dialogue turns (5-50)"
+        default=5,
+        ge=1,
+        le=50,
+        description="Planned number of dialogue turns (1-50)",
     )
 
 
@@ -87,7 +89,7 @@ class SessionResponse(BaseModel):
     stimulus: dict = Field(description="The stimulus used to start the session")
     model_size: str = Field(description="Model size used: 'fast' or 'accurate'")
     language: str = Field(description="Language code")
-    total_turns: int = Field(default=20, description="Planned number of dialogue turns")
+    total_turns: int = Field(default=5, description="Planned number of dialogue turns")
     turns: list[TurnResponse] = Field(
         default_factory=list,
         description="All turns in the session"
