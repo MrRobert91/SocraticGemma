@@ -39,22 +39,3 @@ export function AgeSelector({ value, onChange, lang = 'es' }: AgeSelectorProps) 
     </div>
   );
 }
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {ageGroups.map((group) => (
-          <button
-            key={group.value}
-            type="button"
-            onClick={() => onChange(group.value)}
-            className={`flex flex-col items-center gap-1.5 p-4 ${
-              value === group.value ? 'neo-toggle-on' : 'neo-toggle-off'
-            }`}
-          >
-            <span className="text-2xl">{group.icon}</span>
-            <span className="text-sm">{group.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
