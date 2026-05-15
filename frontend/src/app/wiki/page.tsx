@@ -192,7 +192,7 @@ function WikiGraphInner() {
   const [edges, , onEdgesChange] = useEdgesState(flowEdges);
 
   const onNodeClick: NodeMouseHandler = useCallback((_evt, node) => {
-    setSelectedSlug((node.data as WikiNode).slug);
+    setSelectedSlug((node.data as unknown as WikiNode).slug);
   }, []);
 
   return (
@@ -263,7 +263,7 @@ function WikiGraphInner() {
               <Controls />
               <MiniMap
                 nodeColor={(n) => {
-                  const cat = (n.data as WikiNode)?.category ?? 'topic';
+                  const cat = (n.data as unknown as WikiNode)?.category ?? 'topic';
                   return CATEGORY_COLORS[cat]?.bg ?? '#eee';
                 }}
               />
