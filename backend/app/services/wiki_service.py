@@ -268,10 +268,30 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
     4. Run synthesis LLM call → page content
     5. Write pages to disk, upsert DB records, sync edges
     """
+    start_ts = time.time()
+    logger.info("=" * 70)
+    logger.info(
+        "[WIKI] START synthesis  user=%s  session=%s  lang=%s",
+        user_id, session_id, preferred_language,
+    )
+
     try:
+        # ── Step 0: Load session data ─────────────────────────────────
         session_data = await get_full_session_for_wiki(session_id)
         if session_data is None:
-            logger.warning("Wiki synthesis: session %s not found in DB", session_id)
+            logger.error("[WIKI] ABORT: session %s not found in DB", session_id)
+            return
+
+        turns_count = len(session_data.get("turns", []))
+        has_report = bool(session_data.get("report"))
+        logger.info(
+            "[WIKI] session loaded — turns=%d, has_report=%s, age=%s, stimulus=%r",
+            turns_count, has_report, session_data["age_group"],
+            (session_data["stimulus"].get("title") or session_data["stimulus"].get("content", ""))[:60],
+        )
+
+        if turns_count == 0:
+            logger.error("[WIKI] ABORT: session has 0 turns")
             return
 
         transcript = _format_transcript(session_data["turns"])
@@ -279,7 +299,8 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         report = session_data.get("report") or ""
         language = session_data.get("language", preferred_language)
 
-        # ── Step 1: Extract ──────────────────────────────────────────
+        # ── Step 1: Extraction LLM ────────────────────────────────────
+        logger.info("[WIKI] STEP 1/4 — extraction LLM call")
         extraction_prompt = _EXTRACTION_PROMPT_TEMPLATE.format(
             age_group=session_data["age_group"],
             language=language,
@@ -288,34 +309,70 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             transcript=transcript,
             report=report[:2000],  # cap to avoid huge prompts
         )
+        logger.info("[WIKI]   extraction prompt: %d chars", len(extraction_prompt))
 
-        extraction_json = await _llm_call_non_streaming(extraction_prompt)
-        extraction = _parse_json_response(extraction_json)
-        if extraction is None:
-            logger.warning("Wiki synthesis: extraction LLM returned invalid JSON for session %s", session_id)
+        extraction_json = await _llm_call_non_streaming(extraction_prompt, max_tokens=2048)
+        if not extraction_json.strip():
+            logger.error("[WIKI] ABORT: extraction LLM returned empty response")
+            _dump_failure(session_id, "extraction-empty", extraction_prompt, extraction_json)
             return
 
-        # ── Step 2: Load existing pages for context ──────────────────
+        extraction = _parse_json_response(extraction_json)
+        if extraction is None:
+            logger.error(
+                "[WIKI] ABORT: extraction returned invalid JSON. Raw (first 800): %s",
+                extraction_json[:800],
+            )
+            _dump_failure(session_id, "extraction-bad-json", extraction_prompt, extraction_json)
+            return
+        logger.info(
+            "[WIKI]   extraction parsed OK — topics=%d, streams=%d, open_questions=%d, contradictions=%d",
+            len(extraction.get("topics", [])),
+            len(extraction.get("streams", [])),
+            len(extraction.get("open_questions", [])),
+            len(extraction.get("contradictions", [])),
+        )
+
+        # ── Step 2: Load existing pages ───────────────────────────────
+        logger.info("[WIKI] STEP 2/4 — loading existing pages")
         existing_pages = await list_wiki_pages(user_id)
         existing_summary = _summarize_existing_pages(user_id, existing_pages)
+        logger.info("[WIKI]   existing pages in DB: %d", len(existing_pages))
 
-        # ── Step 3: Synthesize ───────────────────────────────────────
+        # ── Step 3: Synthesis LLM ─────────────────────────────────────
+        logger.info("[WIKI] STEP 3/4 — synthesis LLM call")
         ts = time.strftime("%Y-%m-%dT%H:%M:%S")
         synthesis_prompt = _SYNTHESIS_PROMPT_TEMPLATE.format(
             extraction=json.dumps(extraction, ensure_ascii=False, indent=2),
             existing_pages_summary=existing_summary,
             timestamp=ts,
         )
+        logger.info("[WIKI]   synthesis prompt: %d chars", len(synthesis_prompt))
 
-        synthesis_json = await _llm_call_non_streaming(synthesis_prompt)
+        synthesis_json = await _llm_call_non_streaming(synthesis_prompt, max_tokens=8192)
+        if not synthesis_json.strip():
+            logger.error("[WIKI] ABORT: synthesis LLM returned empty response")
+            _dump_failure(session_id, "synthesis-empty", synthesis_prompt, synthesis_json)
+            return
+
         synthesis = _parse_json_response(synthesis_json)
         if synthesis is None:
-            logger.warning("Wiki synthesis: synthesis LLM returned invalid JSON for session %s", session_id)
+            logger.error(
+                "[WIKI] ABORT: synthesis returned invalid JSON. Length=%d. Raw (first 1500): %s",
+                len(synthesis_json), synthesis_json[:1500],
+            )
+            _dump_failure(session_id, "synthesis-bad-json", synthesis_prompt, synthesis_json)
             return
+        logger.info(
+            "[WIKI]   synthesis parsed OK — pages=%d, has_profile=%s",
+            len(synthesis.get("pages", [])),
+            bool(synthesis.get("profile_content")),
+        )
 
         now = time.time()
 
         # ── Step 4: Write pages ──────────────────────────────────────
+        logger.info("[WIKI] STEP 4/4 — writing pages to disk and DB")
         pages_written: list[str] = []
         for page_spec in synthesis.get("pages", []):
             slug = page_spec.get("slug", "").strip()
@@ -323,6 +380,10 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             category = page_spec.get("category", "topic")
             content = page_spec.get("content", "")
             if not slug or not content:
+                logger.warning(
+                    "[WIKI]   skipping page with empty slug or content: slug=%r content_len=%d",
+                    slug, len(content),
+                )
                 continue
 
             write_page(user_id, slug, content, category)
@@ -332,6 +393,10 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             await upsert_wiki_page(page_id, user_id, slug, title, category, now)
             await link_wiki_page_to_session(page_id, session_id)
             pages_written.append(slug)
+            logger.info(
+                "[WIKI]   wrote page  slug=%-30s  category=%-8s  chars=%d",
+                slug, category, len(content),
+            )
 
         # ── Step 5: Write profile ─────────────────────────────────────
         profile_content = synthesis.get("profile_content", "")
@@ -341,53 +406,165 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             if profile_id is None:
                 profile_id = str(uuid.uuid4())
             await upsert_wiki_page(profile_id, user_id, "_profile", "Perfil filosófico", "profile", now)
+            logger.info("[WIKI]   wrote _profile  chars=%d", len(profile_content))
+        else:
+            logger.warning("[WIKI]   no profile_content returned by LLM")
 
         # ── Step 6: Sync graph edges ──────────────────────────────────
+        logger.info("[WIKI] syncing graph edges")
         await sync_graph_edges(user_id)
 
+        elapsed = time.time() - start_ts
         logger.info(
-            "Wiki synthesis complete for user %s session %s: %d pages written",
-            user_id, session_id, len(pages_written),
+            "[WIKI] DONE  user=%s  session=%s  pages_written=%d  elapsed=%.1fs",
+            user_id, session_id, len(pages_written), elapsed,
         )
+        logger.info("=" * 70)
 
     except Exception:
-        logger.exception("Wiki synthesis failed for user %s session %s", user_id, session_id)
+        logger.exception(
+            "[WIKI] UNHANDLED EXCEPTION  user=%s  session=%s",
+            user_id, session_id,
+        )
 
 
 # ─── LLM helpers ─────────────────────────────────────────────────────────────
 
-async def _llm_call_non_streaming(prompt: str) -> str:
+async def _llm_call_non_streaming(prompt: str, max_tokens: int = 4096) -> str:
     """Call the wiki LLM and collect full text response."""
+    model = _get_wiki_model()
+    t0 = time.time()
     chunks: list[str] = []
     async for evt_type, text in gemma_client.generate(
         prompt=prompt,
-        model_name=_get_wiki_model(),
-        max_tokens=2048,
+        model_name=model,
+        max_tokens=max_tokens,
         streaming=True,
         thinking_mode=False,
     ):
         if evt_type == "content":
             chunks.append(text)
-    return "".join(chunks)
+    response = "".join(chunks)
+    logger.info(
+        "[WIKI]   LLM call: model=%s max_tokens=%d → %d chars in %.1fs",
+        model, max_tokens, len(response), time.time() - t0,
+    )
+    return response
 
 
 def _parse_json_response(text: str) -> Optional[dict]:
-    """Extract and parse a JSON object from LLM output."""
-    # Try to find JSON block in markdown code fences first
-    fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if fence_match:
-        text = fence_match.group(1)
-    else:
-        # Find first { ... } span
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1:
-            return None
-        text = text[start : end + 1]
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
+    """Extract and parse a JSON object from LLM output.
+
+    Handles common LLM output pathologies:
+    - Response wrapped in outer markdown fences (```json ... ```)
+    - Triple-backticks nested inside string values (the regex must NOT
+      stop at the first internal fence)
+    - Unescaped literal newlines/tabs inside string values (LLMs frequently
+      produce these instead of the JSON-required `\\n`)
+    """
+    if not text or not text.strip():
         return None
+
+    stripped = text.strip()
+
+    # 1. Strip the OUTER markdown fence only — anchored at start/end.
+    #    A non-anchored regex would chew into nested fences inside content.
+    if stripped.startswith("```"):
+        m = re.match(r"^```(?:json|markdown)?\s*\n(.*)\n```\s*$", stripped, re.DOTALL)
+        if m:
+            stripped = m.group(1).strip()
+
+    # 2. Find the outermost { ... } span.
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start == -1 or end == -1 or end < start:
+        logger.warning(
+            "[WIKI]   _parse_json_response: no JSON object boundaries (text_len=%d, head=%r)",
+            len(text), text[:200],
+        )
+        return None
+    candidate = stripped[start : end + 1]
+
+    # 3. Strict parse.
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError as e:
+        logger.info(
+            "[WIKI]   strict JSON parse failed at pos=%d: %s → trying string-repair",
+            getattr(e, "pos", -1), e.msg,
+        )
+
+    # 4. Heuristic repair: escape literal whitespace inside string values.
+    repaired = _repair_json_strings(candidate)
+    try:
+        return json.loads(repaired)
+    except json.JSONDecodeError as e:
+        # Surface enough context to actually debug this in the logs.
+        pos = getattr(e, "pos", 0) or 0
+        snippet = repaired[max(0, pos - 120) : min(len(repaired), pos + 120)]
+        logger.error(
+            "[WIKI]   JSON repair also failed: %s at pos=%d\n"
+            "          local context: %r\n"
+            "          repaired length=%d  raw length=%d",
+            e.msg, pos, snippet, len(repaired), len(text),
+        )
+        return None
+
+
+def _repair_json_strings(text: str) -> str:
+    """Escape literal newlines/tabs/CR inside JSON string values.
+
+    LLMs often emit JSON where the `content` field contains real newlines
+    instead of the required `\\n` escape — that violates RFC 8259. We walk
+    the text tracking double-quote state and escape the offending chars
+    only when inside a string. Backslash-escaped quotes are honoured.
+    """
+    out: list[str] = []
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            out.append(ch)
+            escape_next = False
+            continue
+        if ch == "\\":
+            out.append(ch)
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            out.append(ch)
+            continue
+        if in_string:
+            if ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\t":
+                out.append("\\t")
+            else:
+                out.append(ch)
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def _dump_failure(session_id: str, stage: str, prompt: str, response: str) -> None:
+    """Persist a failed synthesis call to disk for offline diagnosis."""
+    try:
+        dir_ = _DATA_ROOT / "wiki_synthesis_failures"
+        dir_.mkdir(parents=True, exist_ok=True)
+        path = dir_ / f"{int(time.time())}-{session_id}-{stage}.txt"
+        path.write_text(
+            f"=== STAGE: {stage} ===\n"
+            f"=== SESSION: {session_id} ===\n"
+            f"=== PROMPT (len={len(prompt)}) ===\n{prompt}\n\n"
+            f"=== RESPONSE (len={len(response)}) ===\n{response}\n",
+            encoding="utf-8",
+        )
+        logger.error("[WIKI]   failure dump saved to %s", path)
+    except Exception:
+        logger.exception("[WIKI]   could not save failure dump")
 
 
 def _format_transcript(turns: list[dict]) -> str:

@@ -5,10 +5,20 @@ Built for the Philosophy for Children (P4C) hackathon project.
 """
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure application loggers emit INFO-level messages to stdout so Docker logs
+# capture wiki synthesis pipeline traces. Without this, `logger.info(...)` calls
+# from `app.*` modules are silently dropped because uvicorn's default config
+# only configures its own loggers.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router, conversations
 from .routers import report

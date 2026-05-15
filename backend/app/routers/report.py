@@ -57,11 +57,20 @@ async def create_report(
             # Trigger wiki synthesis in background for authenticated users
             if current_user:
                 from ..services.wiki_service import synthesize_wiki_update
+                logger.info(
+                    "[WIKI-TRIGGER] queued from report endpoint  user=%s session=%s",
+                    current_user["id"], session_id,
+                )
                 background_tasks.add_task(
                     synthesize_wiki_update,
                     current_user["id"],
                     session_id,
                     current_user.get("preferred_language", "es"),
+                )
+            else:
+                logger.info(
+                    "[WIKI-TRIGGER] skipped from report — guest user  session=%s",
+                    session_id,
                 )
 
             yield f"event: complete\ndata: {json.dumps({'status': 'done'})}\n\n"

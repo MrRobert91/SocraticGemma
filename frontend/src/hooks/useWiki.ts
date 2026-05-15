@@ -87,6 +87,42 @@ export function useWikiPage(slug: string) {
   return { page, loading, error };
 }
 
+// ─── useWikiStatus ────────────────────────────────────────────────────────────
+
+export interface WikiStatus {
+  page_count: number;
+  session_count: number;
+  last_page_updated_at: number | null;
+}
+
+export function useWikiStatus() {
+  const [status, setStatus] = useState<WikiStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/wiki/status`, { credentials: 'include' });
+      if (res.status === 401) {
+        setStatus(null);
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setStatus(await res.json());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error loading wiki status');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+
+  return { status, loading, error, refetch: fetch_ };
+}
+
 // ─── useWikiPages ─────────────────────────────────────────────────────────────
 
 export function useWikiPages() {

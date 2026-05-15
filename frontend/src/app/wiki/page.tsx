@@ -17,8 +17,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useWikiGraph, useWikiPage } from '@/hooks/useWiki';
+import { useWikiGraph, useWikiPage, useWikiStatus } from '@/hooks/useWiki';
 import { WikiNode } from '@/lib/types';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
 // ─── Category colours ─────────────────────────────────────────────────────────
 
@@ -171,8 +173,40 @@ function layoutNodes(wikiNodes: WikiNode[]): Node[] {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function WikiGraphInner() {
-  const { graph, loading, error } = useWikiGraph();
+  const { graph, loading, error, refetch: refetchGraph } = useWikiGraph();
+  const { status: wikiStatus, refetch: refetchStatus } = useWikiStatus();
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildMsg, setRebuildMsg] = useState<string | null>(null);
+
+  const handleRebuild = useCallback(async () => {
+    setRebuilding(true);
+    setRebuildMsg(null);
+    try {
+      const res = await fetch(`${API_BASE}/wiki/rebuild`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setRebuildMsg(
+        `Regenerando wiki a partir de ${data.session_count ?? '?'} sesión(es). ` +
+        `Esto puede tardar 1–3 minutos. Pulsa "Recargar" en un momento.`
+      );
+    } catch (e) {
+      setRebuildMsg(
+        'No se pudo iniciar la regeneración. ' +
+        (e instanceof Error ? e.message : 'Error desconocido')
+      );
+    } finally {
+      setRebuilding(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    refetchGraph();
+    refetchStatus();
+  }, [refetchGraph, refetchStatus]);
 
   const flowNodes: Node[] = graph ? layoutNodes(graph.nodes) : [];
   const flowEdges: Edge[] = graph
@@ -241,10 +275,46 @@ function WikiGraphInner() {
           </div>
         )}
         {!loading && !error && graph && graph.nodes.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-96 gap-4 text-[var(--muted)]">
-            <span className="text-5xl">📭</span>
-            <p className="font-bold text-lg">El wiki está vacío</p>
-            <p className="text-sm">Completa una sesión y genera el informe filosófico para poblar el wiki.</p>
+          <div className="flex flex-col items-center justify-center h-96 gap-4 text-[var(--muted)] max-w-xl mx-auto text-center px-4">
+            {wikiStatus && wikiStatus.session_count === 0 ? (
+              <>
+                <span className="text-5xl">📭</span>
+                <p className="font-bold text-lg">Tu wiki está vacío</p>
+                <p className="text-sm">
+                  Completa una sesión socrática y genera el informe filosófico para empezar a construir tu grafo de conocimiento.
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="text-5xl">⏳</span>
+                <p className="font-bold text-lg">Tu wiki aún no se ha generado</p>
+                <p className="text-sm">
+                  Tienes {wikiStatus?.session_count ?? '?'} sesión(es) guardada(s) pero ninguna página en el wiki todavía.
+                  {' '}La síntesis se ejecuta automáticamente al generar el informe filosófico de una sesión y puede tardar 1–3 minutos.
+                  {' '}Si has esperado y sigue vacío, prueba a regenerarlo manualmente.
+                </p>
+                {rebuildMsg && (
+                  <div className="neo-card p-3 text-xs text-[var(--text)] bg-amber-50 border-amber-300">
+                    {rebuildMsg}
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap justify-center">
+                  <button
+                    onClick={handleRefresh}
+                    className="neo-btn-ghost px-4 py-2 text-sm"
+                  >
+                    🔄 Recargar
+                  </button>
+                  <button
+                    onClick={handleRebuild}
+                    disabled={rebuilding}
+                    className="neo-btn px-4 py-2 text-sm"
+                  >
+                    {rebuilding ? 'Solicitando…' : '🛠 Regenerar wiki'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
         {!loading && !error && graph && graph.nodes.length > 0 && (

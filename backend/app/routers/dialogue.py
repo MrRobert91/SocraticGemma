@@ -109,7 +109,12 @@ async def process_turn(
                         session_now = session_store.get_session(session_id)
                         if session_now:
                             total = getattr(session_now, "total_turns", 20)
-                            if len(session_now.turns) >= total:
+                            turns_done = len(session_now.turns)
+                            logger.info(
+                                "[WIKI-TRIGGER] dialogue: user=%s session=%s turns=%d/%d",
+                                current_user["id"], session_id, turns_done, total,
+                            )
+                            if turns_done >= total:
                                 try:
                                     from ..services.wiki_service import synthesize_wiki_update
                                     asyncio.ensure_future(
@@ -119,9 +124,27 @@ async def process_turn(
                                             current_user.get("preferred_language", "es"),
                                         )
                                     )
-                                    logger.info("Wiki synthesis queued for session %s", session_id)
+                                    logger.info(
+                                        "[WIKI-TRIGGER] queued from dialogue end-of-session  session=%s",
+                                        session_id,
+                                    )
                                 except Exception:
-                                    logger.exception("Failed to queue wiki synthesis")
+                                    logger.exception("[WIKI-TRIGGER] failed to queue wiki synthesis")
+                            else:
+                                logger.info(
+                                    "[WIKI-TRIGGER] skipped — session not finished (%d/%d turns)",
+                                    turns_done, total,
+                                )
+                        else:
+                            logger.warning(
+                                "[WIKI-TRIGGER] session_now is None  session=%s",
+                                session_id,
+                            )
+                    else:
+                        logger.info(
+                            "[WIKI-TRIGGER] skipped — guest user (no auth)  session=%s",
+                            session_id,
+                        )
                 elif event["type"] == "error":
                     yield {
                         "event": "error",

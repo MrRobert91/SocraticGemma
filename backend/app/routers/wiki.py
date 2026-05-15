@@ -26,6 +26,55 @@ RequiredUser = Annotated[dict, Depends(get_required_user)]
 
 
 @router.get(
+    "/status",
+    summary="Get wiki status for the current user",
+    description=(
+        "Returns whether the user has wiki pages and whether they have any "
+        "saved sessions. Lets the frontend distinguish between 'never used' "
+        "and 'synthesis pending or failed' states."
+    ),
+)
+async def get_status(current_user: RequiredUser) -> dict:
+    from ..database import get_conversations_page  # local to avoid circular
+
+    user_id = current_user["id"]
+    pages = await list_wiki_pages(user_id)
+    convs = await get_conversations_page(1, 1, user_id)
+    return {
+        "page_count": len(pages),
+        "session_count": convs.get("total", 0),
+        "last_page_updated_at": max((p["updated_at"] for p in pages), default=None),
+    }
+
+
+@router.post(
+    "/synthesize/{session_id}",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Manually trigger wiki synthesis for one session",
+    description=(
+        "Useful for retrying a failed synthesis. Runs the LLM pipeline in "
+        "the background; check backend logs (or call /wiki/status) afterwards."
+    ),
+)
+async def synthesize_one(
+    session_id: str,
+    current_user: RequiredUser,
+    background_tasks: BackgroundTasks,
+) -> dict:
+    logger.info(
+        "[WIKI-TRIGGER] queued manually  user=%s  session=%s",
+        current_user["id"], session_id,
+    )
+    background_tasks.add_task(
+        synthesize_wiki_update,
+        current_user["id"],
+        session_id,
+        current_user.get("preferred_language", "es"),
+    )
+    return {"status": "synthesizing", "session_id": session_id}
+
+
+@router.get(
     "/profile",
     summary="Get the user's philosophical profile",
     description="Returns the _profile.md content and a short summary snippet.",
