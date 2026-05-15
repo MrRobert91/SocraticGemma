@@ -1,18 +1,23 @@
 """Dialogue endpoints with SSE streaming."""
 
+import asyncio
 import json
-from typing import Annotated
+import logging
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
+from ..dependencies import get_optional_user
 from ..services.session_store import session_store
 from ..services.prompt_builder import prompt_builder
 from ..services.gemma_client import gemma_client
 from ..services.evaluator import evaluator
 from ..services.socratic_engine import SocraticEngine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["dialogue"])
 
@@ -29,7 +34,8 @@ class TurnRequest(BaseModel):
 )
 async def process_turn(
     session_id: str,
-    request: TurnRequest
+    request: TurnRequest,
+    current_user: Optional[dict] = Depends(get_optional_user),
 ) -> StreamingResponse:
     """Process a turn in the Socratic dialogue with SSE streaming.
     
@@ -98,6 +104,24 @@ async def process_turn(
                             "scores": event["scores"]
                         })
                     }
+                    # After last turn: trigger wiki synthesis automatically
+                    if current_user:
+                        session_now = session_store.get_session(session_id)
+                        if session_now:
+                            total = getattr(session_now, "total_turns", 20)
+                            if len(session_now.turns) >= total:
+                                try:
+                                    from ..services.wiki_service import synthesize_wiki_update
+                                    asyncio.ensure_future(
+                                        synthesize_wiki_update(
+                                            current_user["id"],
+                                            session_id,
+                                            current_user.get("preferred_language", "es"),
+                                        )
+                                    )
+                                    logger.info("Wiki synthesis queued for session %s", session_id)
+                                except Exception:
+                                    logger.exception("Failed to queue wiki synthesis")
                 elif event["type"] == "error":
                     yield {
                         "event": "error",

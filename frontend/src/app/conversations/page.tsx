@@ -199,24 +199,37 @@ export default function ConversationsPage() {
           </Link>
           <nav className="flex gap-2" aria-label="Navegación principal">
             <Link href="/"        className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
+            <Link href="/wiki"    className="neo-btn-ghost px-3 py-1.5 text-sm">🗺 Wiki</Link>
             <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">Conversaciones</Link>
           </nav>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-10">
-        {/* Wiki profile panel — only shown when profile exists */}
-        {profile?.content && (
+        {/* Wiki panel — always visible for logged-in users */}
+        {!profile?.content ? (
+          <div className="neo-card mb-8 p-5 border-l-4 border-dashed border-[var(--border)] flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" aria-hidden="true">🗺️</span>
+              <div>
+                <p className="text-sm font-black text-[var(--text)]">Wiki filosófico personal</p>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  Se construirá automáticamente al terminar conversaciones y generar informes.
+                </p>
+              </div>
+            </div>
+            <Link href="/wiki" className="neo-btn-ghost px-3 py-1.5 text-xs font-bold shrink-0">
+              Ver grafo →
+            </Link>
+          </div>
+        ) : (
           <div className="neo-card mb-8 p-5 border-l-4 border-[var(--accent)]">
             <div className="flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-2xl" aria-hidden="true">🧠</span>
                 <h3 className="text-base font-black text-[var(--text)]">Tu perfil filosófico</h3>
               </div>
-              <Link
-                href="/wiki"
-                className="neo-btn px-3 py-1.5 text-xs font-bold"
-              >
+              <Link href="/wiki" className="neo-btn px-3 py-1.5 text-xs font-bold">
                 Ver wiki completa →
               </Link>
             </div>
