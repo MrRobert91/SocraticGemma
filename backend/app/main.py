@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router, conversations
 from .routers import report
 from .routers import auth as auth_router
+from .routers import wiki as wiki_router
 from .services.session_store import session_store
 from .database import init_db
 from .config import settings
@@ -118,6 +119,7 @@ app.include_router(health.router)
 app.include_router(rag_router.router)
 app.include_router(conversations.router)
 app.include_router(report.router)
+app.include_router(wiki_router.router)
 
 
 @app.get("/", tags=["root"])

@@ -1,13 +1,19 @@
 """Philosophical report endpoints with SSE streaming."""
 
+import asyncio
 import json
+import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from typing import Optional
 
+from ..dependencies import get_optional_user
 from ..services.session_store import session_store
 from ..services.report_service import generate_report
 from ..database import save_report as db_save_report, get_report as db_get_report
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["report"])
 
@@ -17,7 +23,11 @@ router = APIRouter(prefix="/sessions", tags=["report"])
     summary="Generate a philosophical profile report (SSE stream)",
     description="Streams a markdown report as Server-Sent Events. Persists to SQLite when complete."
 )
-async def create_report(session_id: str) -> StreamingResponse:
+async def create_report(
+    session_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: Optional[dict] = Depends(get_optional_user),
+) -> StreamingResponse:
     """Generate and stream a philosophical report for the session."""
     session = session_store.get_session(session_id)
     if session is None:
@@ -43,6 +53,16 @@ async def create_report(session_id: str) -> StreamingResponse:
                 await db_save_report(session_id, "".join(full_content))
             except Exception:
                 pass  # non-fatal
+
+            # Trigger wiki synthesis in background for authenticated users
+            if current_user:
+                from ..services.wiki_service import synthesize_wiki_update
+                background_tasks.add_task(
+                    synthesize_wiki_update,
+                    current_user["id"],
+                    session_id,
+                    current_user.get("preferred_language", "es"),
+                )
 
             yield f"event: complete\ndata: {json.dumps({'status': 'done'})}\n\n"
         except Exception as exc:

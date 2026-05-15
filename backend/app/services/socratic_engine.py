@@ -115,7 +115,17 @@ class SocraticEngine:
         if session.turns:
             last_question_type = session.turns[-1].question_type
             recent_types = [t.question_type for t in session.turns[-7:]]
-        
+
+        # Fetch wiki profile for authenticated users (only on first turn to avoid overhead)
+        wiki_profile: Optional[str] = None
+        user_id = getattr(session, "user_id", None)
+        if user_id and len(session.turns) == 0:
+            try:
+                from .wiki_service import get_profile_summary
+                wiki_profile = get_profile_summary(user_id)
+            except Exception:
+                wiki_profile = None
+
         prompt = prompt_builder.build_prompt(
             session_history=session.turns,
             child_input=child_input,
@@ -126,6 +136,7 @@ class SocraticEngine:
             stimulus=session.stimulus,
             turn_number=len(session.turns) + 1,
             total_turns=getattr(session, 'total_turns', 20),
+            wiki_profile=wiki_profile,
         )
         
         # Get model name based on session settings

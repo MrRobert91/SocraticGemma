@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConversationSummary, type ConversationsPage } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { useWikiProfile } from '@/hooks/useWiki';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
@@ -149,6 +150,7 @@ export default function ConversationsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useWikiProfile();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -203,6 +205,27 @@ export default function ConversationsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-10">
+        {/* Wiki profile panel — only shown when profile exists */}
+        {profile?.content && (
+          <div className="neo-card mb-8 p-5 border-l-4 border-[var(--accent)]">
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl" aria-hidden="true">🧠</span>
+                <h3 className="text-base font-black text-[var(--text)]">Tu perfil filosófico</h3>
+              </div>
+              <Link
+                href="/wiki"
+                className="neo-btn px-3 py-1.5 text-xs font-bold"
+              >
+                Ver wiki completa →
+              </Link>
+            </div>
+            <p className="text-sm text-[var(--muted)] leading-relaxed line-clamp-4 whitespace-pre-line">
+              {profile.summary}
+            </p>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-2xl font-black text-[var(--text)]">
             Conversaciones guardadas

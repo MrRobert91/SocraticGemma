@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     # CORS — comma-separated list of allowed frontend origins
     cors_origins: str = "https://socraticgemma-js7p6v.sliplane.app,http://localhost:3000"
+
+    # Wiki feature
+    wiki_enabled: bool = True
+    wiki_model: str = ""  # defaults to gemma_model_fast at runtime if empty
     
     model_config = {"env_prefix": ""}
 

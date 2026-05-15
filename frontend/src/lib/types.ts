@@ -493,3 +493,42 @@ export interface ConversationDetail {
   updated_at: number;
   turns: ConversationTurn[];
 }
+
+// ─── Wiki ─────────────────────────────────────────────────────────────────────
+
+export interface WikiPage {
+  slug: string;
+  title: string;
+  category: 'topic' | 'stream' | 'profile';
+  content: string;
+  sessions: string[];
+  session_count?: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface WikiNode {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  session_count: number;
+  updated_at: number;
+}
+
+export interface WikiEdge {
+  source: string;
+  target: string;
+  relation: string;
+  weight: number;
+}
+
+export interface WikiGraph {
+  nodes: WikiNode[];
+  edges: WikiEdge[];
+}
+
+export interface WikiProfile {
+  content: string | null;
+  summary: string | null;
+}

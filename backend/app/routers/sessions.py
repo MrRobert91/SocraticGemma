@@ -56,6 +56,8 @@ async def create_session(
     
     # Add thinking_mode attribute dynamically (not in base model)
     session.thinking_mode = request.thinking_mode
+    # Store user_id for wiki profile injection in turns
+    session.user_id = current_user["id"] if current_user else None
     
     session_store.create_session(session)
 

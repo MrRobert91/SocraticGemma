@@ -1,0 +1,288 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import Link from 'next/link';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  MiniMap,
+  Node,
+  Edge,
+  NodeMouseHandler,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+import { useWikiGraph, useWikiPage } from '@/hooks/useWiki';
+import { WikiNode } from '@/lib/types';
+
+// ─── Category colours ─────────────────────────────────────────────────────────
+
+const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  topic:   { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a5f' },
+  stream:  { bg: '#ede9fe', border: '#7c3aed', text: '#2e1065' },
+  profile: { bg: '#fef9c3', border: '#ca8a04', text: '#713f12' },
+};
+
+// ─── Custom node ──────────────────────────────────────────────────────────────
+
+function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } }) {
+  const colors = CATEGORY_COLORS[data.category] ?? CATEGORY_COLORS.topic;
+  const size = Math.max(36, 36 + data.session_count * 8);
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: colors.bg,
+        border: `2.5px solid ${colors.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        boxShadow: data.selected ? `0 0 0 3px ${colors.border}` : '2px 2px 0 0 #222',
+        transition: 'box-shadow 0.1s',
+      }}
+      title={data.title}
+    >
+      <span
+        style={{
+          fontSize: Math.max(9, Math.min(12, size / 4)),
+          fontWeight: 700,
+          color: colors.text,
+          textAlign: 'center',
+          lineHeight: 1.1,
+          padding: '2px 4px',
+          maxWidth: size - 8,
+          overflow: 'hidden',
+          wordBreak: 'break-word',
+          display: 'block',
+        }}
+      >
+        {data.title.length > 12 ? data.title.slice(0, 11) + '…' : data.title}
+      </span>
+    </div>
+  );
+}
+
+const nodeTypes = { wiki: WikiNodeComponent };
+
+// ─── Side panel ───────────────────────────────────────────────────────────────
+
+function SlidePanel({ slug, onClose }: { slug: string; onClose: () => void }) {
+  const { page, loading, error } = useWikiPage(slug);
+
+  return (
+    <div
+      className="absolute right-0 top-0 h-full w-80 bg-[var(--bg-card)] border-l-2 border-[var(--border)] shadow-2xl overflow-y-auto z-20 flex flex-col"
+      style={{ boxShadow: '-4px 0 0 0 var(--border)' }}
+    >
+      <div className="flex items-center justify-between p-4 border-b-2 border-[var(--border)] sticky top-0 bg-[var(--bg-card)]">
+        <h3 className="font-black text-sm text-[var(--text)] truncate pr-2">
+          {page?.title ?? slug}
+        </h3>
+        <button
+          onClick={onClose}
+          className="neo-btn-ghost text-lg px-2 py-0.5 leading-none"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+
+      {loading && (
+        <div className="p-4 text-sm text-[var(--muted)] animate-pulse">Cargando…</div>
+      )}
+      {error && (
+        <div className="p-4 text-sm text-rose-600">{error}</div>
+      )}
+      {page && (
+        <div className="p-4 flex-1 flex flex-col gap-4">
+          {/* Category badge */}
+          <div className="flex gap-2 flex-wrap">
+            <span className="neo-tag text-xs">{page.category}</span>
+            {page.sessions.length > 0 && (
+              <span className="neo-tag text-xs bg-[var(--accent-bg)]">
+                {page.sessions.length} sesión{page.sessions.length !== 1 ? 'es' : ''}
+              </span>
+            )}
+          </div>
+
+          {/* Content preview — strip YAML front-matter */}
+          <pre className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap font-mono bg-[var(--bg)] p-3 rounded border border-[var(--border)] max-h-72 overflow-y-auto">
+            {page.content.replace(/^---[\s\S]*?---\s*/m, '').trim()}
+          </pre>
+
+          {/* Linked sessions */}
+          {page.sessions.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-[var(--muted)] mb-2">CONVERSACIONES</p>
+              <div className="flex flex-col gap-1">
+                {page.sessions.map(sid => (
+                  <Link
+                    key={sid}
+                    href={`/conversations/${sid}`}
+                    className="text-xs text-[var(--accent)] underline truncate"
+                  >
+                    {sid.slice(0, 8)}…
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Link
+            href={`/wiki/${slug}`}
+            className="neo-btn text-xs px-3 py-1.5 text-center mt-auto"
+          >
+            Ver página completa →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Layout helpers ───────────────────────────────────────────────────────────
+
+function layoutNodes(wikiNodes: WikiNode[]): Node[] {
+  // Simple circular layout
+  const n = wikiNodes.length;
+  return wikiNodes.map((node, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(n, 1);
+    const radius = Math.max(150, n * 30);
+    return {
+      id: node.id,
+      type: 'wiki',
+      position: {
+        x: 400 + radius * Math.cos(angle),
+        y: 300 + radius * Math.sin(angle),
+      },
+      data: { ...node, selected: false },
+    };
+  });
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+function WikiGraphInner() {
+  const { graph, loading, error } = useWikiGraph();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+
+  const flowNodes: Node[] = graph ? layoutNodes(graph.nodes) : [];
+  const flowEdges: Edge[] = graph
+    ? graph.edges.map(e => ({
+        id: `${e.source}-${e.target}`,
+        source: e.source,
+        target: e.target,
+        animated: false,
+        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#888' },
+        style: { stroke: '#aaa', strokeWidth: 1.5 },
+        label: e.relation !== 'related' ? e.relation : undefined,
+        labelStyle: { fontSize: 9, fill: '#777' },
+      }))
+    : [];
+
+  const [nodes, , onNodesChange] = useNodesState(flowNodes);
+  const [edges, , onEdgesChange] = useEdgesState(flowEdges);
+
+  const onNodeClick: NodeMouseHandler = useCallback((_evt, node) => {
+    setSelectedSlug((node.data as WikiNode).slug);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      {/* Header */}
+      <header
+        className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
+        style={{ boxShadow: '0 4px 0 0 var(--border)' }}
+      >
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/conversations" className="neo-btn-ghost px-2 py-1 text-lg font-bold" aria-label="Volver">←</Link>
+            <span className="text-2xl" aria-hidden="true">🗺️</span>
+            <h1 className="text-xl font-black text-[var(--text)]">Tu wiki filosófico</h1>
+          </div>
+          <div className="flex gap-2 items-center">
+            {/* Legend */}
+            <div className="hidden sm:flex gap-3 text-xs font-semibold mr-2">
+              {Object.entries(CATEGORY_COLORS).map(([cat, c]) => (
+                <span key={cat} className="flex items-center gap-1">
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.bg, border: `1.5px solid ${c.border}`, display: 'inline-block' }} />
+                  {cat}
+                </span>
+              ))}
+            </div>
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL ?? '/api/backend'}/wiki/export`}
+              download="wiki.zip"
+              className="neo-btn-ghost px-3 py-1.5 text-xs"
+            >
+              ⬇ Exportar ZIP
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 relative">
+        {loading && (
+          <div className="flex items-center justify-center h-96 text-[var(--muted)] font-semibold">
+            Cargando grafo…
+          </div>
+        )}
+        {error && (
+          <div className="flex items-center justify-center h-96 text-rose-600 font-semibold">
+            {error}
+          </div>
+        )}
+        {!loading && !error && graph && graph.nodes.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-96 gap-4 text-[var(--muted)]">
+            <span className="text-5xl">📭</span>
+            <p className="font-bold text-lg">El wiki está vacío</p>
+            <p className="text-sm">Completa una sesión y genera el informe filosófico para poblar el wiki.</p>
+          </div>
+        )}
+        {!loading && !error && graph && graph.nodes.length > 0 && (
+          <div className="w-full h-[calc(100vh-72px)] relative">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={onNodeClick}
+              nodeTypes={nodeTypes}
+              fitView
+              attributionPosition="bottom-right"
+            >
+              <Background gap={20} color="#ddd" />
+              <Controls />
+              <MiniMap
+                nodeColor={(n) => {
+                  const cat = (n.data as WikiNode)?.category ?? 'topic';
+                  return CATEGORY_COLORS[cat]?.bg ?? '#eee';
+                }}
+              />
+            </ReactFlow>
+
+            {selectedSlug && (
+              <SlidePanel slug={selectedSlug} onClose={() => setSelectedSlug(null)} />
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function WikiPage() {
+  return (
+    <ReactFlowProvider>
+      <WikiGraphInner />
+    </ReactFlowProvider>
+  );
+}

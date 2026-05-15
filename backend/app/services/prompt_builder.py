@@ -129,6 +129,7 @@ class PromptBuilder:
         stimulus: Optional[dict] = None,
         turn_number: int = 1,
         total_turns: int = 20,
+        wiki_profile: Optional[str] = None,
     ) -> str:
         """Build a complete Socratic prompt with all 7 layers.
         
@@ -234,6 +235,16 @@ This is the philosophical starting point for the entire dialogue. Base your ques
         # Layer 7: Output format
         layers.append("=" * 50 + "\nLAYER 7: OUTPUT FORMAT\n" + "=" * 50)
         layers.append(self.prompts.get("output_format", ""))
+
+        # Layer 8: Wiki profile (optional — only for authenticated users with wiki)
+        if wiki_profile:
+            layers.append("=" * 50 + "\nLAYER 8: PERFIL FILOSÓFICO DEL USUARIO\n" + "=" * 50)
+            layers.append(
+                "El siguiente perfil resume el historial filosófico del usuario en sesiones anteriores. "
+                "Úsalo para personalizar tus preguntas, hacer referencia a temas previos, y profundizar "
+                "en áreas donde el usuario ha mostrado interés o dificultades recurrentes.\n\n"
+                + wiki_profile
+            )
         
         return "\n\n".join(layers)
 
