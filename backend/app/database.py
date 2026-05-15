@@ -55,6 +55,25 @@ async def init_db() -> None:
                 created_at REAL NOT NULL
             )
         """)
+        # ── Auth: users table ───────────────────────────────────────────
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at REAL NOT NULL
+            )
+        """)
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
+        )
+        # ── Migration: add user_id to conversations (idempotent) ─────────
+        try:
+            await db.execute(
+                "ALTER TABLE conversations ADD COLUMN user_id TEXT REFERENCES users(id)"
+            )
+        except Exception:
+            pass  # Column already exists
         await db.commit()
 
 
@@ -65,13 +84,14 @@ async def save_session(
     model_size: str,
     language: str,
     created_at: float,
+    user_id: Optional[str] = None,
 ) -> None:
     """Persist a new session. Ignores duplicates."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """INSERT OR IGNORE INTO conversations
-               (id, age_group, stimulus, model_size, language, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               (id, age_group, stimulus, model_size, language, created_at, updated_at, user_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 session_id,
                 age_group,
@@ -80,6 +100,7 @@ async def save_session(
                 language,
                 created_at,
                 created_at,
+                user_id,
             ),
         )
         await db.commit()
@@ -138,13 +159,15 @@ async def save_turn(
         await db.commit()
 
 
-async def get_conversations_page(page: int, per_page: int) -> dict:
-    """Return a paginated list of conversations ordered by creation date desc."""
+async def get_conversations_page(page: int, per_page: int, user_id: str) -> dict:
+    """Return a paginated list of conversations for a user ordered by creation date desc."""
     offset = (page - 1) * per_page
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
 
-        async with db.execute("SELECT COUNT(*) FROM conversations") as cur:
+        async with db.execute(
+            "SELECT COUNT(*) FROM conversations WHERE user_id = ?", (user_id,)
+        ) as cur:
             total = (await cur.fetchone())[0]
 
         async with db.execute(
@@ -153,10 +176,11 @@ async def get_conversations_page(page: int, per_page: int) -> dict:
                       COUNT(t.id) AS turn_count
                FROM conversations c
                LEFT JOIN turns t ON t.session_id = c.id
+               WHERE c.user_id = ?
                GROUP BY c.id
                ORDER BY c.created_at DESC
                LIMIT ? OFFSET ?""",
-            (per_page, offset),
+            (user_id, per_page, offset),
         ) as cur:
             rows = await cur.fetchall()
 
@@ -183,13 +207,14 @@ async def get_conversations_page(page: int, per_page: int) -> dict:
     }
 
 
-async def get_conversation_detail(session_id: str) -> Optional[dict]:
-    """Return a full conversation with all turns, or None if not found."""
+async def get_conversation_detail(session_id: str, user_id: str) -> Optional[dict]:
+    """Return a full conversation with all turns, or None if not found or not owned by user."""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
 
         async with db.execute(
-            "SELECT * FROM conversations WHERE id = ?", (session_id,)
+            "SELECT * FROM conversations WHERE id = ? AND user_id = ?",
+            (session_id, user_id),
         ) as cur:
             conv = await cur.fetchone()
 
@@ -292,12 +317,19 @@ async def get_report(session_id: str) -> Optional[str]:
     return row["content"] if row else None
 
 
-async def delete_conversation(session_id: str) -> bool:
+async def delete_conversation(session_id: str, user_id: str) -> bool:
     """Delete a conversation and all its associated turns and report.
 
-    Returns True if a row was deleted, False if the session was not found.
+    Returns True if a row was deleted, False if not found or not owned by user.
     """
     async with aiosqlite.connect(DB_PATH) as db:
+        # Verify ownership before deleting
+        async with db.execute(
+            "SELECT id FROM conversations WHERE id = ? AND user_id = ?",
+            (session_id, user_id),
+        ) as cur:
+            if await cur.fetchone() is None:
+                return False
         # Child tables first (foreign-key order)
         await db.execute("DELETE FROM reports WHERE session_id = ?", (session_id,))
         await db.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
@@ -305,3 +337,42 @@ async def delete_conversation(session_id: str) -> bool:
         deleted = db.total_changes > 0
         await db.commit()
     return deleted
+
+
+# ── User management ────────────────────────────────────────────────────────────
+
+async def create_user(email: str, password_hash: str) -> dict:
+    """Create a new user and return the created user dict."""
+    import uuid as _uuid
+    user_id = str(_uuid.uuid4())
+    now = time.time()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO users (id, email, password_hash, created_at)
+               VALUES (?, ?, ?, ?)""",
+            (user_id, email, password_hash, now),
+        )
+        await db.commit()
+    return {"id": user_id, "email": email, "password_hash": password_hash}
+
+
+async def get_user_by_email(email: str) -> Optional[dict]:
+    """Return a user dict by email, or None if not found."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, email, password_hash FROM users WHERE email = ?", (email,)
+        ) as cur:
+            row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_user_by_id(user_id: str) -> Optional[dict]:
+    """Return a user dict by ID, or None if not found."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, email FROM users WHERE id = ?", (user_id,)
+        ) as cur:
+            row = await cur.fetchone()
+    return dict(row) if row else None

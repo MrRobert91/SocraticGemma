@@ -11,7 +11,9 @@ export function useEval() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/sessions/${sessionId}/eval`);
+      const response = await fetch(`${API_BASE}/sessions/${sessionId}/eval`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error(`Error fetching evaluation: ${response.statusText}`);
       }

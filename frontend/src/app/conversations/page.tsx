@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ConversationSummary, type ConversationsPage } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
@@ -141,17 +143,27 @@ function Pagination({
 }
 
 export default function ConversationsPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<ConversationsPage | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && user === null) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
 
   const fetchPage = useCallback(async (p: number) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(
-        `${API_BASE}/conversations?page=${p}&per_page=${PER_PAGE}`
+        `${API_BASE}/conversations?page=${p}&per_page=${PER_PAGE}`,
+        { credentials: 'include' },
       );
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const json: ConversationsPage = await res.json();
@@ -166,8 +178,10 @@ export default function ConversationsPage() {
   }, []);
 
   useEffect(() => {
-    fetchPage(1);
-  }, [fetchPage]);
+    if (!authLoading && user !== null) {
+      fetchPage(1);
+    }
+  }, [fetchPage, authLoading, user]);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>

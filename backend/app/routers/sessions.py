@@ -2,14 +2,15 @@
 
 import time
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..models import Session, Turn
 from ..schemas import CreateSessionRequest, SessionResponse, TurnResponse, EvalScoresResponse
 from ..services.session_store import session_store
 from ..database import save_session as db_save_session
+from ..dependencies import get_optional_user
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -21,7 +22,10 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
     summary="Create a new Socratic dialogue session",
     description="Creates a new session with the specified age group and stimulus."
 )
-async def create_session(request: CreateSessionRequest) -> dict:
+async def create_session(
+    request: CreateSessionRequest,
+    current_user: Optional[dict] = Depends(get_optional_user),
+) -> dict:
     """Create a new Socratic dialogue session.
     
     Args:
@@ -55,19 +59,21 @@ async def create_session(request: CreateSessionRequest) -> dict:
     
     session_store.create_session(session)
 
-    # Persist to SQLite (fire-and-forget; failures are non-fatal)
-    try:
-        await db_save_session(
-            session_id=session_id,
-            age_group=request.age_group,
-            stimulus=request.stimulus.model_dump(),
-            model_size=request.model_size,
-            language=request.language,
-            created_at=time.time(),
-        )
-    except Exception as exc:  # noqa: BLE001
-        import logging
-        logging.warning("Could not persist session to DB: %s", exc)
+    # Only persist to SQLite for authenticated users
+    if current_user:
+        try:
+            await db_save_session(
+                session_id=session_id,
+                age_group=request.age_group,
+                stimulus=request.stimulus.model_dump(),
+                model_size=request.model_size,
+                language=request.language,
+                created_at=time.time(),
+                user_id=current_user["id"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.warning("Could not persist session to DB: %s", exc)
 
     return {"session_id": session_id}
 

@@ -14,6 +14,7 @@ export function useSession() {
       const response = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -34,7 +35,9 @@ export function useSession() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/sessions/${id}`);
+      const response = await fetch(`${API_BASE}/sessions/${id}`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error(`Error fetching session: ${response.statusText}`);
       }

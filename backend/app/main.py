@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import sessions, dialogue, evaluation, compare, prompts, health, rag_router, conversations
 from .routers import report
+from .routers import auth as auth_router
 from .services.session_store import session_store
 from .database import init_db
 from .config import settings
@@ -95,16 +96,19 @@ Built for the P4C Hackathon 2024.
     lifespan=lifespan
 )
 
-# Add CORS middleware (allow all origins for development)
+# Add CORS middleware
+# allow_origins is restricted to known frontend URLs; allow_credentials=True is required for cookies
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers
+app.include_router(auth_router.router)
 app.include_router(sessions.router)
 app.include_router(dialogue.router)
 app.include_router(evaluation.router)

@@ -41,7 +41,7 @@ export default function EvalPage() {
       try {
         // Step 1: run batch evaluation first
         setLoadingMessage('Evaluando conversación...');
-        await fetch(`${API_BASE}/sessions/${sessionId}/batch-evaluate`, { method: 'POST' });
+        await fetch(`${API_BASE}/sessions/${sessionId}/batch-evaluate`, { method: 'POST', credentials: 'include' });
 
         // Step 2: load session + summary (batch-evaluate may have updated scores)
         setLoadingMessage('Cargando resultados...');

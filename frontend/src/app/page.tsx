@@ -7,10 +7,12 @@ import { AgeSelector } from '@/components/setup/AgeSelector';
 import { StimulusForm } from '@/components/setup/StimulusForm';
 import { Presets } from '@/components/setup/Presets';
 import { useSession } from '@/hooks/useSession';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
   const { createSession, loading, error } = useSession();
+  const { user, loading: authLoading, logout } = useAuth();
 
   const [ageGroup, setAgeGroup] = useState<AgeGroup>('9-12');
   const [stimulus, setStimulus] = useState<Stimulus>({
@@ -65,8 +67,28 @@ export default function HomePage() {
               SocraticGemma
             </span>
           </div>
-          <nav className="flex gap-2" aria-label="Navegación principal">
-            <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">Conversaciones</a>
+          <nav className="flex items-center gap-2" aria-label="Navegación principal">
+            {!authLoading && (
+              user ? (
+                <>
+                  <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">Conversaciones</a>
+                  <span className="hidden sm:block text-xs text-[var(--muted)] font-semibold truncate max-w-[140px]">
+                    {user.email}
+                  </span>
+                  <button
+                    onClick={() => logout()}
+                    className="neo-btn-ghost px-3 py-1.5 text-sm"
+                  >
+                    Salir
+                  </button>
+                </>
+              ) : (
+                <>
+                  <a href="/login" className="neo-btn-ghost px-3 py-1.5 text-sm">Iniciar sesión</a>
+                  <a href="/register" className="neo-btn px-3 py-1.5 text-sm">Registrarse</a>
+                </>
+              )
+            )}
           </nav>
         </div>
       </header>

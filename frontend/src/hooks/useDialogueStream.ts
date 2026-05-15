@@ -42,6 +42,7 @@ export function useDialogueStream(): UseDialogueStreamReturn {
     fetch(`${API_BASE}/sessions/${sessionId}/turns`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ child_input: text }),
       signal: abortControllerRef.current.signal,
     })

@@ -127,7 +127,7 @@ export default function ConversationDetailPage({
     if (!confirm('¿Eliminar esta conversación? Esta acción no se puede deshacer.')) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok && res.status !== 404) throw new Error(`Error ${res.status}`);
       router.push('/conversations');
     } catch (e) {
@@ -174,8 +174,8 @@ export default function ConversationDetailPage({
     async function load() {
       try {
         const [convRes, reportRes] = await Promise.all([
-          fetch(`${API_BASE}/conversations/${id}`),
-          fetch(`${API_BASE}/sessions/${id}/report`),
+          fetch(`${API_BASE}/conversations/${id}`, { credentials: 'include' }),
+          fetch(`${API_BASE}/sessions/${id}/report`, { credentials: 'include' }),
         ]);
         if (!convRes.ok) throw new Error(`Error ${convRes.status}`);
         setConv(await convRes.json());

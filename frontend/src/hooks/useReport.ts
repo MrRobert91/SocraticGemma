@@ -12,7 +12,9 @@ export function useReport() {
 
   const loadReport = useCallback(async (sessionId: string): Promise<boolean> => {
     try {
-      const res = await fetch(`${API_BASE}/sessions/${sessionId}/report`);
+      const res = await fetch(`${API_BASE}/sessions/${sessionId}/report`, {
+        credentials: 'include',
+      });
       if (!res.ok) return false;
       const data = await res.json();
       setContent(data.content ?? '');
@@ -34,6 +36,7 @@ export function useReport() {
     try {
       const res = await fetch(`${API_BASE}/sessions/${sessionId}/report`, {
         method: 'POST',
+        credentials: 'include',
         signal: abortRef.current.signal,
       });
 

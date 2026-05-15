@@ -20,6 +20,8 @@ services:
       - EVALUATOR_MODEL=${EVALUATOR_MODEL:-google/gemma-4-e2b-it}
       - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
       - DB_PATH=${DB_PATH:-/data/conversations.db}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://socraticgemma-js7p6v.sliplane.app,http://localhost:3000}
     volumes:
       - db_data:/data
     networks:
