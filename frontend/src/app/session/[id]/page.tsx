@@ -200,9 +200,7 @@ export default function SessionPage() {
                 ➕ Continuar 5 turnos más
               </button>
             </div>
-            <p className="text-xs text-center text-[var(--muted)] mt-3">
-              O ve a <button onClick={() => { reset(); router.push(`/eval/${sessionId}`); }} className="underline font-semibold hover:text-[var(--text)]">ver la evaluación técnica</button>
-            </p>
+
           </div>
         </div>
       )}

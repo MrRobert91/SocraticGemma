@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useReport } from '@/hooks/useReport';
+import { useSession } from '@/hooks/useSession';
 
 // Simple markdown-to-HTML renderer (no external lib needed for basic structure)
 function renderMarkdown(text: string): string {
@@ -34,24 +35,37 @@ export default function ReportPage() {
 
   const { content, status, error, loadReport, generateReport } = useReport();
   const reportRef = useRef<HTMLDivElement>(null);
+  const { getSession } = useSession();
+  const [sessionTitle, setSessionTitle] = useState<string>('');
 
   // On mount: try to load existing report
   useEffect(() => {
     loadReport(sessionId);
   }, [sessionId, loadReport]);
 
+  // Fetch session stimulus title for PDF filename
+  useEffect(() => {
+    getSession(sessionId).then((s) => {
+      if (s) setSessionTitle(s.stimulus?.title || s.stimulus?.content?.slice(0, 60) || '');
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
   const handleDownloadPdf = useCallback(() => {
     if (!content) return;
     const reportHtml = renderMarkdown(content);
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+    const docTitle = sessionTitle ? `${sessionTitle} - ${stamp}` : `Perfil Filosófico - ${stamp}`;
     const w = window.open('', '_blank', 'width=900,height=700');
     if (!w) {
-      alert('Tu navegador bloqu\u00e9 la ventana emergente. Permite ventanas emergentes para este sitio e int\u00e9ntalo de nuevo.');
+      alert('Tu navegador bloqué la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.');
       return;
     }
     w.document.write(`<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Perfil Filos\u00f3fico</title>
+  <title>${docTitle}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, serif; max-width: 780px; margin: 40px auto; padding: 0 32px 60px; color: #111827; line-height: 1.75; }
@@ -71,7 +85,7 @@ export default function ReportPage() {
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
-  }, [content]);
+  }, [content, sessionTitle]);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
@@ -93,12 +107,6 @@ export default function ReportPage() {
             <h1 className="font-black text-[var(--text)]">Perfil Filosófico</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push(`/eval/${sessionId}`)}
-              className="neo-btn-ghost px-3 py-1.5 text-sm"
-            >
-              📊 Evaluación técnica
-            </button>
             {status === 'complete' && content && (
               <button onClick={handleDownloadPdf} className="neo-btn px-3 py-1.5 text-sm">
                 🖨️ Imprimir / PDF

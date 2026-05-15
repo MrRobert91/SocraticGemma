@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AgeGroup, Stimulus, CreateSessionRequest, PRESETS, Preset } from '@/lib/types';
 import { AgeSelector } from '@/components/setup/AgeSelector';
@@ -8,6 +8,15 @@ import { StimulusForm } from '@/components/setup/StimulusForm';
 import { Presets } from '@/components/setup/Presets';
 import { useSession } from '@/hooks/useSession';
 import { useAuth } from '@/context/AuthContext';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  es: 'ES',
+  en: 'EN',
+  ca: 'CA',
+  gl: 'GL',
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -25,6 +34,23 @@ export default function HomePage() {
   const [language, setLanguage] = useState('es');
   const [totalTurns, setTotalTurns] = useState(10);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Initialize language from user preference
+  useEffect(() => {
+    if (user?.preferred_language) setLanguage(user.preferred_language);
+  }, [user?.preferred_language]);
+
+  const handleLanguageChange = (lang: string) => {
+    setLanguage(lang);
+    if (user) {
+      fetch(`${API_BASE}/auth/preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ preferred_language: lang }),
+      }).catch(console.error);
+    }
+  };
 
   const handlePresetSelect = (preset: Preset) => {
     setAgeGroup(preset.ageGroup);
@@ -68,6 +94,17 @@ export default function HomePage() {
             </span>
           </div>
           <nav className="flex items-center gap-2" aria-label="Navegación principal">
+            {/* Language selector — always visible */}
+            <select
+              value={language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="neo-select px-2 py-1 text-xs"
+              aria-label="Idioma"
+            >
+              {Object.entries(LANGUAGE_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
             {!authLoading && (
               user ? (
                 <>
@@ -144,23 +181,6 @@ export default function HomePage() {
 
             {showAdvanced && (
               <div className="px-6 pb-6 space-y-5 border-t-2 border-[var(--border)] pt-5">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="neo-label" htmlFor="lang-select">Idioma</label>
-                    <select
-                      id="lang-select"
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className="neo-select px-4 py-2.5"
-                    >
-                      <option value="es">Español</option>
-                      <option value="en">English</option>
-                      <option value="ca">Català</option>
-                      <option value="gl">Galego</option>
-                    </select>
-                  </div>
-                </div>
-
                 <div className="flex flex-wrap gap-5">
                   <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
                     <input

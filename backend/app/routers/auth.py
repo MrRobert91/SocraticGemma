@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
 from ..config import settings
-from ..database import create_user, get_user_by_email
+from ..database import create_user, get_user_by_email, update_user_language
 from ..dependencies import get_required_user
 from ..services.auth import create_access_token, hash_password, verify_password
 
@@ -70,7 +70,7 @@ async def register(body: RegisterRequest, response: Response) -> dict:
     token = create_access_token(user["id"], user["email"])
     _set_auth_cookie(response, token)
 
-    return {"id": user["id"], "email": user["email"]}
+    return {"id": user["id"], "email": user["email"], "preferred_language": user.get("preferred_language", "es")}
 
 
 @router.post("/login")
@@ -89,7 +89,7 @@ async def login(body: LoginRequest, response: Response) -> dict:
     token = create_access_token(user["id"], user["email"])
     _set_auth_cookie(response, token)
 
-    return {"id": user["id"], "email": user["email"]}
+    return {"id": user["id"], "email": user["email"], "preferred_language": user.get("preferred_language", "es")}
 
 
 @router.post("/logout")
@@ -107,4 +107,26 @@ async def logout(response: Response) -> dict:
 @router.get("/me")
 async def me(user: Annotated[dict, Depends(get_required_user)]) -> dict:
     """Return the currently authenticated user, or 401 if not authenticated."""
-    return {"id": user["id"], "email": user["email"]}
+    return {"id": user["id"], "email": user["email"], "preferred_language": user.get("preferred_language", "es")}
+
+
+_ALLOWED_LANGUAGES = {"es", "en", "ca", "gl"}
+
+
+class PreferencesRequest(BaseModel):
+    preferred_language: str
+
+
+@router.patch("/preferences")
+async def update_preferences(
+    body: PreferencesRequest,
+    current_user: Annotated[dict, Depends(get_required_user)],
+) -> dict:
+    """Update the authenticated user's preferences."""
+    if body.preferred_language not in _ALLOWED_LANGUAGES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Language must be one of: {', '.join(sorted(_ALLOWED_LANGUAGES))}",
+        )
+    await update_user_language(current_user["id"], body.preferred_language)
+    return {"ok": True}

@@ -140,6 +140,10 @@ export default function ConversationDetailPage({
   const handleDownloadPdf = useCallback(() => {
     if (!reportContent) return;
     const reportHtml = renderMarkdown(reportContent);
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+    const rawTitle = conv?.stimulus?.title || conv?.stimulus?.content?.slice(0, 60) || '';
+    const docTitle = rawTitle ? `${rawTitle} - ${stamp}` : `Perfil Filosófico - ${stamp}`;
     const w = window.open('', '_blank', 'width=900,height=700');
     if (!w) {
       alert('Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.');
@@ -148,7 +152,7 @@ export default function ConversationDetailPage({
     w.document.write(`<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Perfil Filosófico</title>
+  <title>${docTitle}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, serif; max-width: 780px; margin: 40px auto; padding: 0 32px 60px; color: #111827; line-height: 1.75; }
@@ -168,7 +172,7 @@ export default function ConversationDetailPage({
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
-  }, [reportContent]);
+  }, [reportContent, conv]);
 
   useEffect(() => {
     async function load() {

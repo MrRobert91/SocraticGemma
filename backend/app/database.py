@@ -74,6 +74,13 @@ async def init_db() -> None:
             )
         except Exception:
             pass  # Column already exists
+        # ── Migration: add preferred_language to users (idempotent) ──────
+        try:
+            await db.execute(
+                "ALTER TABLE users ADD COLUMN preferred_language TEXT DEFAULT 'es'"
+            )
+        except Exception:
+            pass  # Column already exists
         await db.commit()
 
 
@@ -361,7 +368,7 @@ async def get_user_by_email(email: str) -> Optional[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT id, email, password_hash FROM users WHERE email = ?", (email,)
+            "SELECT id, email, password_hash, preferred_language FROM users WHERE email = ?", (email,)
         ) as cur:
             row = await cur.fetchone()
     return dict(row) if row else None
@@ -372,7 +379,17 @@ async def get_user_by_id(user_id: str) -> Optional[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT id, email FROM users WHERE id = ?", (user_id,)
+            "SELECT id, email, preferred_language FROM users WHERE id = ?", (user_id,)
         ) as cur:
             row = await cur.fetchone()
     return dict(row) if row else None
+
+
+async def update_user_language(user_id: str, language: str) -> None:
+    """Persist the user's preferred language."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE users SET preferred_language = ? WHERE id = ?",
+            (language, user_id),
+        )
+        await db.commit()

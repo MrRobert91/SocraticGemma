@@ -6,6 +6,7 @@ export type AgeGroup = '6-8' | '9-12' | '13-16' | 'adult';
 export interface User {
   id: string;
   email: string;
+  preferred_language?: string;
 }
 // ─── Stimulus ─────────────────────────────────────────────────────────────────
 
