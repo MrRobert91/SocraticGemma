@@ -24,7 +24,7 @@ from ..database import (
     upsert_wiki_edge,
     upsert_wiki_page,
 )
-from .gemma_client import GemmaClient
+from .gemma_client import gemma_client
 
 logger = logging.getLogger(__name__)
 
@@ -358,20 +358,16 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
 
 async def _llm_call_non_streaming(prompt: str) -> str:
     """Call the wiki LLM and collect full text response."""
-    client = GemmaClient()
     chunks: list[str] = []
-    try:
-        async for evt_type, text in client.generate(
-            prompt=prompt,
-            model_name=_get_wiki_model(),
-            max_tokens=2048,
-            streaming=True,
-            thinking_mode=False,
-        ):
-            if evt_type == "content":
-                chunks.append(text)
-    finally:
-        await client.close()
+    async for evt_type, text in gemma_client.generate(
+        prompt=prompt,
+        model_name=_get_wiki_model(),
+        max_tokens=2048,
+        streaming=True,
+        thinking_mode=False,
+    ):
+        if evt_type == "content":
+            chunks.append(text)
     return "".join(chunks)
 
 
