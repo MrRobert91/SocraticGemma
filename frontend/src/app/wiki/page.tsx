@@ -14,6 +14,8 @@ import {
   useNodesState,
   useEdgesState,
   MarkerType,
+  Handle,
+  Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -36,6 +38,17 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string
 function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } }) {
   const colors = CATEGORY_COLORS[data.category] ?? CATEGORY_COLORS.topic;
   const size = Math.max(36, 36 + data.session_count * 8);
+  // Hidden handles are required so React Flow can anchor edges to this custom
+  // node. Without them the canvas renders nodes but the edges have nowhere
+  // to attach, so they disappear visually.
+  const handleStyle = {
+    opacity: 0,
+    width: 1,
+    height: 1,
+    background: 'transparent',
+    border: 'none',
+    pointerEvents: 'none' as const,
+  };
   return (
     <div
       style={{
@@ -50,9 +63,12 @@ function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } })
         cursor: 'pointer',
         boxShadow: data.selected ? `0 0 0 3px ${colors.border}` : '2px 2px 0 0 #222',
         transition: 'box-shadow 0.1s',
+        position: 'relative',
       }}
       title={data.title}
     >
+      <Handle type="target" position={Position.Top} style={handleStyle} isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} isConnectable={false} />
       <span
         style={{
           fontSize: Math.max(9, Math.min(12, size / 4)),
@@ -224,10 +240,10 @@ function WikiGraphInner() {
         source: e.source,
         target: e.target,
         animated: false,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#888' },
-        style: { stroke: '#aaa', strokeWidth: 1.5 },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: '#475569' },
+        style: { stroke: '#475569', strokeWidth: 2 },
         label: e.relation !== 'related' ? e.relation : undefined,
-        labelStyle: { fontSize: 9, fill: '#777' },
+        labelStyle: { fontSize: 9, fill: '#475569' },
       })),
     );
   }, [graph, setNodes, setEdges]);
