@@ -16,7 +16,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
     scenario: t.stimulusScenario,
     story: t.stimulusStory,
   };
-  const meta = STIMULUS_META[stimulus.type] ?? STIMULUS_META.question;
+  const meta = STIMULUS_META[stimulus.type as keyof typeof STIMULUS_META] ?? STIMULUS_META.question;
 
   return (
     <div className="space-y-4">
