@@ -357,6 +357,43 @@ async def get_report(session_id: str) -> Optional[str]:
     return row["content"] if row else None
 
 
+async def get_all_reports_for_user(user_id: str, limit: int = 20) -> list[dict]:
+    """Return reports for a user, newest first, capped at `limit`.
+
+    Each item: {session_id, stimulus_title, stimulus_content, created_at, content}.
+    Used by the wiki global-profile synthesis to write a profile that reflects
+    every conversation the user has had, not just the most recent one.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT r.session_id, r.content, r.created_at, c.stimulus
+                 FROM reports r
+                 JOIN conversations c ON r.session_id = c.id
+                WHERE c.user_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT ?""",
+            (user_id, limit),
+        ) as cur:
+            rows = await cur.fetchall()
+    out: list[dict] = []
+    for r in rows:
+        try:
+            stim = json.loads(r["stimulus"]) if r["stimulus"] else {}
+        except (json.JSONDecodeError, TypeError):
+            stim = {}
+        out.append(
+            {
+                "session_id": r["session_id"],
+                "stimulus_title": stim.get("title", ""),
+                "stimulus_content": stim.get("content", ""),
+                "created_at": r["created_at"],
+                "content": r["content"],
+            }
+        )
+    return out
+
+
 async def delete_conversation(session_id: str, user_id: str) -> bool:
     """Delete a conversation and all its associated turns and report.
 

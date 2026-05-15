@@ -132,10 +132,36 @@ def export_wiki_zip(user_id: str) -> bytes:
 
 # ─── Graph sync ───────────────────────────────────────────────────────────────
 
-async def sync_graph_edges(user_id: str) -> None:
-    """Parse all wiki pages and rebuild wiki_edges in SQLite."""
+_BACKLINK_BLOCK_RE = re.compile(
+    r"<!-- backlinks:start -->.*?<!-- backlinks:end -->",
+    re.DOTALL,
+)
+
+
+def _slugify(text: str) -> str:
+    """Make a URL-safe slug. Accepts already-slugified input idempotently."""
+    if not text:
+        return ""
+    text = text.strip().lower()
+    # Strip accents
+    accents = str.maketrans("áéíóúüñàèìòùâêîôûäëïöü", "aeiouunaeiouaeiouaeiou")
+    text = text.translate(accents)
+    text = re.sub(r"[^a-z0-9\s-]", "", text)
+    text = re.sub(r"[\s-]+", "-", text).strip("-")
+    return text
+
+
+async def sync_graph_edges(user_id: str) -> int:
+    """Parse all wiki pages and rebuild edges + backlinks blocks.
+
+    Returns the number of pages whose backlinks block was rewritten.
+    """
     pages = await list_wiki_pages(user_id)
     slug_to_id: dict[str, str] = {p["slug"]: p["id"] for p in pages}
+    id_to_page: dict[str, dict] = {p["id"]: p for p in pages}
+
+    # Forward edges: source → set of target_slugs
+    out_links: dict[str, set[str]] = {}
 
     for page in pages:
         page_id = page["id"]
@@ -144,11 +170,55 @@ async def sync_graph_edges(user_id: str) -> None:
             continue
 
         await delete_wiki_edges_for_page(page_id)
-        linked_slugs = parse_wiki_links(content)
-        for linked_slug in set(linked_slugs):
+        # Parse [[refs]] but strip out the backlinks block first so its own
+        # references don't feed back into the edge graph.
+        without_backlinks = _BACKLINK_BLOCK_RE.sub("", content)
+        linked_slugs = set(parse_wiki_links(without_backlinks))
+        out_links[page["slug"]] = linked_slugs
+
+        for linked_slug in linked_slugs:
             target_id = slug_to_id.get(linked_slug)
             if target_id and target_id != page_id:
                 await upsert_wiki_edge(page_id, target_id)
+
+    # Build reverse map: target_slug → list of (source_slug, source_title)
+    backlinks: dict[str, list[tuple[str, str]]] = {}
+    for source_slug, targets in out_links.items():
+        source_page = next((p for p in pages if p["slug"] == source_slug), None)
+        if source_page is None:
+            continue
+        source_title = source_page.get("title") or source_slug
+        for tgt in targets:
+            if tgt == source_slug:
+                continue
+            backlinks.setdefault(tgt, []).append((source_slug, source_title))
+
+    # Rewrite each page's backlinks block (between the HTML comment markers).
+    rewritten = 0
+    for page in pages:
+        slug = page["slug"]
+        content = read_page(user_id, slug, page["category"])
+        if content is None or "<!-- backlinks:start -->" not in content:
+            # Page predates this feature or LLM stripped the markers. Skip.
+            continue
+
+        bl = backlinks.get(slug, [])
+        if bl:
+            lines = [
+                f"- [[{src_slug}]] — {src_title}"
+                for src_slug, src_title in sorted(set(bl))
+            ]
+            block_body = "## Backlinks\n\n" + "\n".join(lines)
+        else:
+            block_body = "## Backlinks\n\n*(Ninguna otra página enlaza a esta todavía.)*"
+
+        new_block = f"<!-- backlinks:start -->\n{block_body}\n<!-- backlinks:end -->"
+        new_content = _BACKLINK_BLOCK_RE.sub(new_block, content)
+        if new_content != content:
+            write_page(user_id, slug, new_content, page["category"])
+            rewritten += 1
+
+    return rewritten
 
 
 # ─── LLM synthesis ───────────────────────────────────────────────────────────
@@ -182,97 +252,452 @@ Responde SOLO con un objeto JSON válido con esta estructura (sin texto adiciona
 }}
 """
 
+_TOPIC_TEMPLATE = """\
+## Tu posición
+[Postura del usuario o preguntas que plantea sobre este tema, integrando esta sesión y previas si las hubiera. 3-6 frases.]
+
+## Evolución del pensamiento
+[Cómo ha cambiado la visión del usuario sobre este tema a través de las sesiones que lo tocan. Si es primera aparición, indícalo brevemente.]
+
+## Ideas clave exploradas
+[Conceptos centrales discutidos. Lista con guiones.]
+
+## Tensiones y preguntas abiertas
+[Contradicciones detectadas o preguntas que quedaron sin respuesta. Lista con guiones.]
+
+## Corrientes relacionadas
+[[stream-slug-1]], [[stream-slug-2]]
+
+## Lecturas relevantes
+[[reading-slug-1]], [[reading-slug-2]]
+
+## Conexiones con otros temas
+[[topic-slug-otro]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
+_STREAM_TEMPLATE = """\
+## Definición
+[Qué es la corriente filosófica, neutral y objetivo. 3-5 líneas.]
+
+## Ideas centrales
+[3-6 tesis fundamentales. Lista con guiones.]
+
+## Pensadores principales
+[Lista breve sin enlaces externos.]
+
+## Por qué te interesa
+[Conexión específica con el pensamiento del usuario, basada en lo observado en sus conversaciones. 4-6 líneas máximo. Consolida, no acumules.]
+
+## Temas del usuario que tocan esta corriente
+[[topic-slug-1]], [[topic-slug-2]]
+
+## Lecturas recomendadas
+[[reading-slug-1]]
+
+## Corrientes relacionadas u opuestas
+[[stream-slug-otro]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
+_READING_TEMPLATE = """\
+## Autoría
+[Autor], [año], [idioma original si es relevante]
+
+## Resumen
+[2-3 frases sobre el contenido del libro/ensayo.]
+
+## Por qué leerlo
+[Relación específica con lo que ha discutido el usuario en sus conversaciones.]
+
+## Temas relacionados
+[[topic-slug-1]], [[topic-slug-2]]
+
+## Corrientes representadas
+[[stream-slug-1]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
+
 _SYNTHESIS_PROMPT_TEMPLATE = """\
 Eres un sistema de síntesis de un wiki filosófico personal. El usuario acaba de completar una sesión de diálogo socrático.
 
-## Extracción de la sesión
+## Datos de la nueva sesión (extracción JSON)
 {extraction}
 
-## Páginas wiki existentes del usuario (resumen)
-{existing_pages_summary}
+## Páginas a crear o actualizar en esta síntesis
+
+A continuación se listan las páginas que debes generar. Algunas son NUEVAS (no existen aún), otras son ACTUALIZACIONES (existen y debes integrar el nuevo contexto sin descartar lo previo).
+
+{pages_brief}
+
+## Slugs existentes en la wiki del usuario (para enlazar)
+
+Puedes usar `[[slug]]` para enlazar a cualquiera de los slugs listados aquí o a slugs que estés definiendo en esta misma respuesta. NO inventes slugs que no estén en una de estas dos listas.
+
+{known_slugs}
+
+## Reglas estrictas
+
+1. Produce UNA entrada por cada página listada arriba (mismo slug y category).
+2. Cada página debe tener contenido SUSTANCIAL siguiendo la plantilla de su categoría (topic, stream, reading). NO escribas placeholders como "(por completar)".
+3. Para páginas marcadas `UPDATE`: PRESERVA el contenido existente que sigue siendo válido, INTEGRA el contexto nuevo de esta sesión, CONSOLIDA sin acumular párrafos redundantes.
+4. Para páginas marcadas `NEW`: usa la plantilla de la categoría como guía.
+5. NO modifiques las líneas `<!-- backlinks:start -->` ni `<!-- backlinks:end -->` — son gestionadas por el servidor automáticamente.
+6. Toda referencia `[[slug]]` debe corresponder a un slug de las listas de arriba o a uno que estés definiendo. Si necesitas referenciar algo que no existe, NO lo hagas — usa otro slug existente.
+7. Escribe en el idioma del usuario: {language}.
+
+## Plantillas de referencia por categoría
+
+### topic
+
+{topic_template}
+
+### stream
+
+{stream_template}
+
+### reading
+
+{reading_template}
 
 ---
-Tu tarea: generar o actualizar las páginas wiki en Markdown con front matter YAML.
 
-Para cada tema y corriente filosófica identificados, produce una página con este formato exacto:
-```markdown
----
-title: Título de la página
-slug: slug-del-tema
-category: topic  # o "stream" para corrientes filosóficas
-tags: [tag1, tag2]
-sessions: [session_id]
-created: {timestamp}
-updated: {timestamp}
----
+Responde SOLO con JSON válido, sin texto adicional, sin markdown alrededor:
 
-## Tu posición
-[postura del usuario o preguntas planteadas]
-
-## Ideas exploradas
-[conceptos discutidos en esta sesión]
-
-## Tensiones y preguntas abiertas
-[contradicciones o preguntas sin resolver]
-
-## Corrientes filosóficas relacionadas
-[[slug-corriente-1]], [[slug-corriente-2]]
-
-## Lecturas recomendadas
-- *Título* — Autor: razón
-
-## Conexiones
-[[slug-tema-relacionado-1]], [[slug-tema-relacionado-2]]
-```
-
-También produce/actualiza `_profile`:
-```markdown
----
-slug: _profile
-category: profile
-updated: {timestamp}
----
-
-## Estilo filosófico
-[síntesis de 2-3 frases del perfil del usuario]
-
-## Corrientes predominantes
-[[corriente-1]], [[corriente-2]]
-
-## Temas recurrentes
-[lista de temas con enlaces]
-
-## Puntos ciegos o tensiones
-[contradicciones o áreas poco exploradas]
-
-## Lecturas recomendadas
-[top 3 recomendaciones]
-```
-
-Responde SOLO con JSON válido (sin texto adicional):
 {{
   "pages": [
     {{
-      "slug": "slug-del-tema",
+      "slug": "slug-exacto",
       "title": "Título Legible",
-      "category": "topic",
-      "content": "contenido markdown completo"
+      "category": "topic" | "stream" | "reading",
+      "content": "markdown completo de la página, empezando por la primera sección ## (sin frontmatter YAML — eso lo añade el servidor)"
     }}
-  ],
-  "profile_content": "contenido markdown completo del _profile.md"
+  ]
 }}
 """
 
+_GLOBAL_PROFILE_PROMPT_TEMPLATE = """\
+Eres un sistema de síntesis del perfil filosófico GLOBAL de un usuario. Vas a producir el contenido completo de `_profile.md`, que sintetiza TODAS sus conversaciones filosóficas hasta hoy.
+
+## Informes filosóficos de todas las sesiones del usuario (más recientes primero)
+
+{reports_block}
+
+## Perfil global anterior (si existe — para integrar, no descartar)
+
+{previous_profile}
+
+## Slugs disponibles en la wiki del usuario para enlazar
+
+{known_slugs}
+
+## Reglas
+
+1. Esta es una síntesis ACUMULATIVA: identifica recurrencias, evolución de creencias a lo largo del tiempo, contradicciones entre sesiones.
+2. Usa `[[slug]]` SOLO con slugs de la lista de arriba. NO inventes.
+3. Escribe en el idioma del usuario: {language}.
+4. NO añadas frontmatter YAML al contenido (el servidor lo gestiona).
+5. NO añadas las líneas `<!-- backlinks:start -->` ni `<!-- backlinks:end -->` — el servidor las añade.
+
+## Estructura del perfil
+
+## Estilo filosófico
+[3-4 frases sobre cómo razona el usuario: concreto/abstracto, intuitivo/analítico, dialéctico/narrativo, busca certezas o tolera incertidumbre, etc.]
+
+## Corrientes predominantes
+[Lista de corrientes con `[[stream-slug]]` que más resuenan con el pensamiento del usuario, con 1 frase de justificación por cada una.]
+
+## Temas recurrentes
+[Lista de `[[topic-slug]]` que el usuario ha visitado en múltiples sesiones, con observación sobre su evolución.]
+
+## Evolución temporal
+[2-4 frases sobre cómo el pensamiento del usuario ha cambiado a lo largo de las sesiones.]
+
+## Tensiones y contradicciones internas
+[2-4 puntos donde el razonamiento del usuario presenta fricciones entre sesiones distintas.]
+
+## Lecturas recomendadas prioritarias
+[Top 3-5 `[[reading-slug]]` con 1 frase de por qué cada una es especialmente valiosa para este perfil.]
+
+---
+
+Responde SOLO con el contenido markdown del perfil (sin frontmatter, sin JSON, sin envolver en bloques de código). Empieza directamente por la primera `##`.
+"""
+
+
+# ─── Pipeline helpers ─────────────────────────────────────────────────────────
+
+def _plan_pages_from_extraction(
+    extraction: dict, existing_by_slug: dict[str, dict]
+) -> dict:
+    """Build the list of pages to create/update based on the extraction.
+
+    Returns {"create": [...], "update": [...]} where each entry is
+    {slug, title, category, kind}.
+    Kind tags are used only for prompt context (no logic).
+    """
+    create: list[dict] = []
+    update: list[dict] = []
+
+    def add(slug: str, title: str, category: str) -> None:
+        if not slug:
+            return
+        slug = _slugify(slug)
+        entry = {"slug": slug, "title": title or slug, "category": category}
+        target = update if slug in existing_by_slug else create
+        # Avoid duplicates within same plan
+        if not any(p["slug"] == slug for p in target):
+            target.append(entry)
+
+    # Topics
+    topic_titles = extraction.get("topic_titles") or {}
+    for slug in extraction.get("topics", []) or []:
+        add(slug, topic_titles.get(slug, slug.replace("-", " ").title()), "topic")
+
+    # Streams
+    stream_titles = extraction.get("stream_titles") or {}
+    for slug in extraction.get("streams", []) or []:
+        add(slug, stream_titles.get(slug, slug.replace("-", " ").title()), "stream")
+
+    # Readings — extraction returns strings like "Título — Autor (1 frase)";
+    # we need to slugify the title portion.
+    for rec in extraction.get("book_recommendations", []) or []:
+        if not isinstance(rec, str):
+            continue
+        # Split on em-dash, en-dash, or hyphen
+        parts = re.split(r"\s*[—–-]\s*", rec, maxsplit=1)
+        title = parts[0].strip().strip("*\"'")
+        if not title:
+            continue
+        slug = _slugify(title)
+        add(slug, title, "reading")
+
+    return {"create": create, "update": update}
+
+
+def _build_pages_brief(user_id: str, plan: dict) -> str:
+    """Build the per-page brief block of the synthesis prompt.
+
+    For UPDATE pages, includes the current content so the LLM can preserve it.
+    """
+    lines: list[str] = []
+
+    if plan["create"]:
+        lines.append("### Páginas NUEVAS (a crear desde cero, usa la plantilla de su categoría):\n")
+        for p in plan["create"]:
+            lines.append(f"- NEW  category={p['category']}  slug={p['slug']}  title={p['title']!r}")
+        lines.append("")
+
+    if plan["update"]:
+        lines.append("### Páginas EXISTENTES (a actualizar — preserva + integra, NO sobreescribas):\n")
+        for p in plan["update"]:
+            slug = p["slug"]
+            existing = read_page(user_id, slug, p["category"]) or ""
+            # Strip YAML frontmatter and backlinks block for the brief
+            existing = re.sub(r"^---.*?---\s*", "", existing, flags=re.DOTALL).strip()
+            existing = _BACKLINK_BLOCK_RE.sub("", existing).strip()
+            # Cap to avoid prompt bloat
+            if len(existing) > 1500:
+                existing = existing[:1500] + "\n… [truncado]"
+            lines.append(
+                f"- UPDATE  category={p['category']}  slug={p['slug']}  title={p['title']!r}\n"
+                f"  CONTENIDO ACTUAL:\n"
+                f"  ```markdown\n  {existing.replace(chr(10), chr(10) + '  ')}\n  ```\n"
+            )
+
+    return "\n".join(lines) if lines else "(nada que generar)"
+
+
+async def _write_and_register_page(
+    *,
+    user_id: str,
+    session_id: str,
+    slug: str,
+    title: str,
+    category: str,
+    content: str,
+    now: float,
+) -> None:
+    """Write a page to disk + upsert DB record + link to session.
+
+    Ensures the backlinks marker block is present at the bottom so future
+    syncs can rewrite it. The LLM is instructed to keep the markers
+    untouched but we belt-and-braces it here.
+    """
+    if "<!-- backlinks:start -->" not in content:
+        content = content.rstrip() + "\n\n<!-- backlinks:start -->\n<!-- backlinks:end -->"
+
+    write_page(user_id, slug, content, category)
+    page_id = await get_wiki_page_id(user_id, slug)
+    if page_id is None:
+        page_id = str(uuid.uuid4())
+    await upsert_wiki_page(page_id, user_id, slug, title, category, now)
+    await link_wiki_page_to_session(page_id, session_id)
+
+
+async def _create_orphan_stubs(
+    *,
+    user_id: str,
+    session_id: str,
+    written_slugs: set[str],
+    now: float,
+) -> int:
+    """Scan all user pages for [[refs]] that have no page; create stubs.
+
+    Stubs are minimal but registered as real pages so the graph stays
+    connected. Future syntheses will enrich them when the user revisits
+    those topics.
+    Returns the count of stubs created.
+    """
+    pages = await list_wiki_pages(user_id)
+    all_slugs = {p["slug"] for p in pages}
+
+    referenced: set[str] = set()
+    for page in pages:
+        content = read_page(user_id, page["slug"], page["category"])
+        if not content:
+            continue
+        without_bl = _BACKLINK_BLOCK_RE.sub("", content)
+        for ref in parse_wiki_links(without_bl):
+            referenced.add(ref)
+
+    orphans = {r for r in referenced if r and r not in all_slugs and r != "_profile"}
+    created = 0
+    for slug in orphans:
+        # Heuristic category from slug shape — fallback to 'topic'.
+        category = _guess_category_from_slug(slug)
+        title = slug.replace("-", " ").capitalize()
+        content = (
+            f"## Pendiente de exploración\n\n"
+            f"Este nodo apareció referenciado desde otra página pero todavía no se ha "
+            f"profundizado en él en ninguna conversación. Cuando hables sobre este "
+            f"tema, esta página se enriquecerá automáticamente.\n\n"
+            f"<!-- backlinks:start -->\n<!-- backlinks:end -->"
+        )
+        await _write_and_register_page(
+            user_id=user_id,
+            session_id=session_id,
+            slug=slug,
+            title=title,
+            category=category,
+            content=content,
+            now=now,
+        )
+        created += 1
+        logger.info(
+            "[WIKI]   stub created for orphan ref [[%s]] (category=%s)",
+            slug, category,
+        )
+    return created
+
+
+def _guess_category_from_slug(slug: str) -> str:
+    """Best-effort categorisation when creating an orphan stub."""
+    s = slug.lower()
+    stream_hints = ("ismo", "ica", "logia", "fenomenologia", "estoicismo", "kantismo")
+    reading_hints = ("libro-", "ensayo-", "tratado-", "republica", "etica-")
+    if any(s.endswith(h) for h in ("ismo",)) or any(h in s for h in stream_hints):
+        return "stream"
+    if any(s.startswith(h) for h in reading_hints):
+        return "reading"
+    return "topic"
+
+
+# ─── Global profile synthesis ─────────────────────────────────────────────────
+
+async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
+    """Re-synthesise the user's global philosophical profile (_profile.md).
+
+    Pulls every report the user has, builds a prompt with the previous
+    profile as context, and asks the LLM for a single markdown blob.
+    Returns True on success.
+    """
+    from ..database import get_all_reports_for_user  # local to avoid cycles
+
+    reports = await get_all_reports_for_user(user_id, limit=20)
+    if not reports:
+        logger.info("[WIKI]   no reports for user — skipping global profile")
+        return False
+
+    reports_block_parts: list[str] = []
+    for r in reports:
+        title = r["stimulus_title"] or r["stimulus_content"][:60] or "(sin título)"
+        # Cap each report to avoid prompt explosion
+        content = (r["content"] or "")[:2500]
+        reports_block_parts.append(
+            f"### Sesión: {title}\n(created_at={r['created_at']})\n\n{content}\n"
+        )
+    reports_block = "\n---\n".join(reports_block_parts)
+
+    previous_profile = read_page(user_id, "_profile", "profile") or "(ninguno todavía)"
+    previous_profile = re.sub(r"^---.*?---\s*", "", previous_profile, flags=re.DOTALL).strip()
+    previous_profile = _BACKLINK_BLOCK_RE.sub("", previous_profile).strip() or "(ninguno todavía)"
+
+    existing_pages = await list_wiki_pages(user_id)
+    known_slugs = ", ".join(
+        f"[[{p['slug']}]]" for p in existing_pages if p["slug"] != "_profile"
+    ) or "(ninguna página aún)"
+
+    prompt = _GLOBAL_PROFILE_PROMPT_TEMPLATE.format(
+        reports_block=reports_block,
+        previous_profile=previous_profile,
+        known_slugs=known_slugs,
+        language=language,
+    )
+    logger.info(
+        "[WIKI]   global-profile prompt: %d chars, %d reports",
+        len(prompt), len(reports),
+    )
+
+    # This is plain markdown, not JSON.
+    content = await _llm_call_non_streaming(prompt, max_tokens=4096)
+    if not content.strip():
+        logger.warning("[WIKI]   global-profile LLM returned empty content")
+        return False
+
+    # Strip any markdown fences the LLM might have wrapped around
+    content = content.strip()
+    m = re.match(r"^```(?:markdown)?\s*\n(.*)\n```\s*$", content, re.DOTALL)
+    if m:
+        content = m.group(1).strip()
+
+    # Ensure backlinks marker block is at the end so sync_graph_edges can populate it
+    if "<!-- backlinks:start -->" not in content:
+        content = content.rstrip() + "\n\n<!-- backlinks:start -->\n<!-- backlinks:end -->"
+
+    now = time.time()
+    write_page(user_id, "_profile", content, "profile")
+    page_id = await get_wiki_page_id(user_id, "_profile")
+    if page_id is None:
+        page_id = str(uuid.uuid4())
+    await upsert_wiki_page(page_id, user_id, "_profile", "Perfil filosófico global", "profile", now)
+
+    # Re-sync edges so _profile's [[refs]] become real edges and its backlinks block fills.
+    await sync_graph_edges(user_id)
+
+    logger.info(
+        "[WIKI]   global profile written: %d chars, linked to %d slugs",
+        len(content), len(parse_wiki_links(content)),
+    )
+    return True
+
 
 async def synthesize_wiki_update(user_id: str, session_id: str, preferred_language: str = "es") -> None:
-    """Run the full LLM wiki synthesis pipeline for a completed session.
+    """Run the full wiki synthesis pipeline (3 LLM calls + server steps).
 
-    Steps:
-    1. Load session data (turns + report) from DB
-    2. Run extraction LLM call → structured JSON
-    3. Load existing wiki pages for context
-    4. Run synthesis LLM call → page content
-    5. Write pages to disk, upsert DB records, sync edges
+    6 phases:
+      1. Extraction LLM — distil topics/streams/readings from session
+      2. Prepare context (server) — slugify, classify create vs update,
+         load current content for update pages
+      3. Content synthesis LLM — produce/update full page markdown
+      4. Validate + write — persist pages, auto-stub orphan [[refs]]
+      5. Sync edges + regenerate backlinks blocks (server)
+      6. Global profile synthesis LLM — re-synthesise _profile from ALL
+         user reports
     """
     # Dedup: dialogue + report triggers race within seconds of each other.
     if session_id in _SYNTHESIS_IN_PROGRESS:
@@ -314,18 +739,17 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         report = session_data.get("report") or ""
         language = session_data.get("language", preferred_language)
 
-        # ── Step 1: Extraction LLM ────────────────────────────────────
-        logger.info("[WIKI] STEP 1/4 — extraction LLM call")
+        # ── STEP 1/6: Extraction LLM ──────────────────────────────────
+        logger.info("[WIKI] STEP 1/6 — extraction LLM call (LLM #1)")
         extraction_prompt = _EXTRACTION_PROMPT_TEMPLATE.format(
             age_group=session_data["age_group"],
             language=language,
             stimulus_title=stimulus.get("title", ""),
             stimulus_content=stimulus.get("content", ""),
             transcript=transcript,
-            report=report[:2000],  # cap to avoid huge prompts
+            report=report[:2000],
         )
         logger.info("[WIKI]   extraction prompt: %d chars", len(extraction_prompt))
-
         extraction = await _llm_call_json(
             extraction_prompt,
             stage="extraction",
@@ -337,29 +761,56 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             logger.error("[WIKI] ABORT: extraction failed after retries")
             return
         logger.info(
-            "[WIKI]   extraction parsed OK — topics=%d, streams=%d, open_questions=%d, contradictions=%d",
+            "[WIKI]   extraction OK — topics=%d, streams=%d, books=%d",
             len(extraction.get("topics", [])),
             len(extraction.get("streams", [])),
-            len(extraction.get("open_questions", [])),
-            len(extraction.get("contradictions", [])),
+            len(extraction.get("book_recommendations", [])),
         )
 
-        # ── Step 2: Load existing pages ───────────────────────────────
-        logger.info("[WIKI] STEP 2/4 — loading existing pages")
+        # ── STEP 2/6: Prepare context (SERVER, no LLM) ────────────────
+        logger.info("[WIKI] STEP 2/6 — prepare context (server)")
         existing_pages = await list_wiki_pages(user_id)
-        existing_summary = _summarize_existing_pages(user_id, existing_pages)
-        logger.info("[WIKI]   existing pages in DB: %d", len(existing_pages))
+        existing_by_slug = {p["slug"]: p for p in existing_pages}
 
-        # ── Step 3: Synthesis LLM ─────────────────────────────────────
-        logger.info("[WIKI] STEP 3/4 — synthesis LLM call")
-        ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+        # Plan the pages this session should produce.
+        plan = _plan_pages_from_extraction(extraction, existing_by_slug)
+        logger.info(
+            "[WIKI]   plan: create=%d (topic:%d, stream:%d, reading:%d)  "
+            "update=%d (topic:%d, stream:%d, reading:%d)",
+            len(plan["create"]),
+            sum(1 for p in plan["create"] if p["category"] == "topic"),
+            sum(1 for p in plan["create"] if p["category"] == "stream"),
+            sum(1 for p in plan["create"] if p["category"] == "reading"),
+            len(plan["update"]),
+            sum(1 for p in plan["update"] if p["category"] == "topic"),
+            sum(1 for p in plan["update"] if p["category"] == "stream"),
+            sum(1 for p in plan["update"] if p["category"] == "reading"),
+        )
+
+        if not plan["create"] and not plan["update"]:
+            logger.warning("[WIKI]   nothing to synthesise — extraction empty")
+            return
+
+        # Build per-page briefs (with existing content for UPDATE pages).
+        pages_brief = _build_pages_brief(user_id, plan)
+        known_slugs_list = sorted(
+            set(existing_by_slug.keys())
+            | {p["slug"] for p in plan["create"]}
+            | {p["slug"] for p in plan["update"]}
+        )
+
+        # ── STEP 3/6: Content synthesis LLM ───────────────────────────
+        logger.info("[WIKI] STEP 3/6 — content synthesis LLM call (LLM #2)")
         synthesis_prompt = _SYNTHESIS_PROMPT_TEMPLATE.format(
             extraction=json.dumps(extraction, ensure_ascii=False, indent=2),
-            existing_pages_summary=existing_summary,
-            timestamp=ts,
+            pages_brief=pages_brief,
+            known_slugs=", ".join(f"[[{s}]]" for s in known_slugs_list) or "(ninguno aún)",
+            language=language,
+            topic_template=_TOPIC_TEMPLATE,
+            stream_template=_STREAM_TEMPLATE,
+            reading_template=_READING_TEMPLATE,
         )
         logger.info("[WIKI]   synthesis prompt: %d chars", len(synthesis_prompt))
-
         synthesis = await _llm_call_json(
             synthesis_prompt,
             stage="synthesis",
@@ -371,60 +822,87 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             logger.error("[WIKI] ABORT: synthesis failed after retries")
             return
         logger.info(
-            "[WIKI]   synthesis parsed OK — pages=%d, has_profile=%s",
+            "[WIKI]   synthesis OK — %d pages returned",
             len(synthesis.get("pages", [])),
-            bool(synthesis.get("profile_content")),
         )
 
         now = time.time()
+        plan_slugs = {p["slug"] for p in plan["create"]} | {p["slug"] for p in plan["update"]}
 
-        # ── Step 4: Write pages ──────────────────────────────────────
-        logger.info("[WIKI] STEP 4/4 — writing pages to disk and DB")
-        pages_written: list[str] = []
+        # ── STEP 4/6: Validate + write pages ──────────────────────────
+        logger.info("[WIKI] STEP 4/6 — validate + write pages")
+        pages_created: list[str] = []
+        pages_updated: list[str] = []
+
         for page_spec in synthesis.get("pages", []):
-            slug = page_spec.get("slug", "").strip()
+            slug = (page_spec.get("slug") or "").strip()
             title = page_spec.get("title", slug)
             category = page_spec.get("category", "topic")
             content = page_spec.get("content", "")
             if not slug or not content:
                 logger.warning(
-                    "[WIKI]   skipping page with empty slug or content: slug=%r content_len=%d",
+                    "[WIKI]   skip page (empty slug/content): slug=%r len=%d",
                     slug, len(content),
                 )
                 continue
+            if category not in ("topic", "stream", "reading"):
+                logger.warning(
+                    "[WIKI]   skip page (invalid category=%r) slug=%s",
+                    category, slug,
+                )
+                continue
 
-            write_page(user_id, slug, content, category)
-            page_id = await get_wiki_page_id(user_id, slug)
-            if page_id is None:
-                page_id = str(uuid.uuid4())
-            await upsert_wiki_page(page_id, user_id, slug, title, category, now)
-            await link_wiki_page_to_session(page_id, session_id)
-            pages_written.append(slug)
-            logger.info(
-                "[WIKI]   wrote page  slug=%-30s  category=%-8s  chars=%d",
-                slug, category, len(content),
+            # Persist
+            await _write_and_register_page(
+                user_id=user_id,
+                session_id=session_id,
+                slug=slug,
+                title=title,
+                category=category,
+                content=content,
+                now=now,
+            )
+            if slug in existing_by_slug:
+                pages_updated.append(slug)
+            else:
+                pages_created.append(slug)
+
+        # Auto-stub orphan [[refs]] so the graph never has dangling edges.
+        stubs_created = await _create_orphan_stubs(
+            user_id=user_id,
+            session_id=session_id,
+            written_slugs=set(pages_created) | set(pages_updated) | set(existing_by_slug.keys()),
+            now=now,
+        )
+
+        logger.info(
+            "[WIKI]   pages_created=%d  pages_updated=%d  stubs_created=%d",
+            len(pages_created), len(pages_updated), stubs_created,
+        )
+
+        # Check: did the LLM produce every page we asked for?
+        produced = set(pages_created) | set(pages_updated)
+        missed = plan_slugs - produced
+        if missed:
+            logger.warning(
+                "[WIKI]   LLM missed %d planned pages: %s",
+                len(missed), ", ".join(sorted(missed)),
             )
 
-        # ── Step 5: Write profile ─────────────────────────────────────
-        profile_content = synthesis.get("profile_content", "")
-        if profile_content:
-            write_page(user_id, "_profile", profile_content, "profile")
-            profile_id = await get_wiki_page_id(user_id, "_profile")
-            if profile_id is None:
-                profile_id = str(uuid.uuid4())
-            await upsert_wiki_page(profile_id, user_id, "_profile", "Perfil filosófico", "profile", now)
-            logger.info("[WIKI]   wrote _profile  chars=%d", len(profile_content))
-        else:
-            logger.warning("[WIKI]   no profile_content returned by LLM")
+        # ── STEP 5/6: Sync edges + regenerate backlinks ───────────────
+        logger.info("[WIKI] STEP 5/6 — sync edges + regenerate backlinks")
+        backlinks_rewritten = await sync_graph_edges(user_id)
+        logger.info("[WIKI]   backlinks_blocks_rewritten=%d", backlinks_rewritten)
 
-        # ── Step 6: Sync graph edges ──────────────────────────────────
-        logger.info("[WIKI] syncing graph edges")
-        await sync_graph_edges(user_id)
+        # ── STEP 6/6: Global profile synthesis (LLM #3) ───────────────
+        logger.info("[WIKI] STEP 6/6 — global profile synthesis (LLM #3)")
+        await synthesize_global_profile(user_id, language)
 
         elapsed = time.time() - start_ts
         logger.info(
-            "[WIKI] DONE  user=%s  session=%s  pages_written=%d  elapsed=%.1fs",
-            user_id, session_id, len(pages_written), elapsed,
+            "[WIKI] DONE  user=%s  session=%s  created=%d updated=%d stubs=%d  elapsed=%.1fs",
+            user_id, session_id,
+            len(pages_created), len(pages_updated), stubs_created, elapsed,
         )
         logger.info("=" * 70)
 

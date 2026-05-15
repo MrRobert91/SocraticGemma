@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ConversationSummary, type ConversationsPage } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useWikiProfile } from '@/hooks/useWiki';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
@@ -232,7 +233,7 @@ export default function ConversationsPage() {
             <div className="flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-2xl" aria-hidden="true">🧠</span>
-                <h3 className="text-base font-black text-[var(--text)]">Tu perfil filosófico</h3>
+                <h3 className="text-base font-black text-[var(--text)]">Tu perfil filosófico global</h3>
               </div>
               <Link href="/wiki" className="neo-btn px-3 py-1.5 text-xs font-bold">
                 Ver wiki completa →
@@ -240,8 +241,11 @@ export default function ConversationsPage() {
             </div>
 
             {profileExpanded ? (
-              <div className="text-sm text-[var(--text)] leading-relaxed whitespace-pre-line max-h-[60vh] overflow-y-auto pr-2 border-t-2 border-dashed border-[var(--border)] pt-3">
-                {stripFrontmatter(profile.content ?? profile.summary ?? '')}
+              <div className="max-h-[60vh] overflow-y-auto pr-2 border-t-2 border-dashed border-[var(--border)] pt-3">
+                <MarkdownContent
+                  source={stripFrontmatter(profile.content ?? profile.summary ?? '')}
+                  compact
+                />
               </div>
             ) : (
               <p className="text-sm text-[var(--muted)] leading-relaxed line-clamp-4 whitespace-pre-line">

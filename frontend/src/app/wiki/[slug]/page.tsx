@@ -2,17 +2,8 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { useWikiPage } from '@/hooks/useWiki';
-
-// Render [[slug]] wiki links as <a href="/wiki/slug">
-function renderWikiLinks(content: string): string {
-  return content.replace(/\[\[([^\[\]]+)\]\]/g, (_match, slug) => {
-    const label = slug;
-    return `[${label}](/wiki/${encodeURIComponent(slug)})`;
-  });
-}
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 export default function WikiSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -20,10 +11,7 @@ export default function WikiSlugPage({ params }: { params: Promise<{ slug: strin
   const { page, loading, error } = useWikiPage(decodedSlug);
 
   const processedContent = page
-    ? renderWikiLinks(
-        // Strip YAML front-matter
-        page.content.replace(/^---[\s\S]*?---\s*/m, '').trim()
-      )
+    ? page.content.replace(/^---[\s\S]*?---\s*/m, '').trim()
     : '';
 
   return (
@@ -82,16 +70,8 @@ export default function WikiSlugPage({ params }: { params: Promise<{ slug: strin
             </div>
 
             {/* Markdown content */}
-            <article className="neo-card p-6 prose prose-sm max-w-none dark:prose-invert
-              [&_h2]:text-base [&_h2]:font-black [&_h2]:mt-6 [&_h2]:mb-2
-              [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-1
-              [&_a]:text-[var(--accent)] [&_a]:underline
-              [&_ul]:list-disc [&_ul]:pl-5
-              [&_blockquote]:border-l-4 [&_blockquote]:border-[var(--border)] [&_blockquote]:pl-4 [&_blockquote]:text-[var(--muted)]
-            ">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {processedContent}
-              </ReactMarkdown>
+            <article className="neo-card p-6">
+              <MarkdownContent source={processedContent} />
             </article>
 
             {/* Linked sessions */}

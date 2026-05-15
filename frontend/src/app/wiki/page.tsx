@@ -27,6 +27,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   topic:   { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a5f' },
   stream:  { bg: '#ede9fe', border: '#7c3aed', text: '#2e1065' },
+  reading: { bg: '#fee2e2', border: '#dc2626', text: '#7f1d1d' },
   profile: { bg: '#fef9c3', border: '#ca8a04', text: '#713f12' },
 };
 

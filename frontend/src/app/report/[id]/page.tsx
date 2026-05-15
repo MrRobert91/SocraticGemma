@@ -4,27 +4,22 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useReport } from '@/hooks/useReport';
 import { useSession } from '@/hooks/useSession';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
-// Simple markdown-to-HTML renderer (no external lib needed for basic structure)
-function renderMarkdown(text: string): string {
+// Used ONLY by the "Imprimir / PDF" button — generates the static HTML body
+// embedded in the new print window. Display uses <MarkdownContent /> instead.
+function markdownToPrintHtml(text: string): string {
   return text
-    // headings
-    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-6 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-black text-emerald-800 dark:text-emerald-300 mt-8 mb-3 border-b-2 border-black dark:border-white pb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-black text-emerald-900 dark:text-emerald-200 mt-8 mb-4">$1</h1>')
-    // bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-black">$1</strong>')
-    // italic
-    .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
-    // unordered list items
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc mb-1">$1</li>')
-    // wrap consecutive li in ul
-    .replace(/(<li[\s\S]+?<\/li>\n?)+/g, (m) => `<ul class="my-2 space-y-1">${m}</ul>`)
-    // horizontal rule
-    .replace(/^---$/gm, '<hr class="my-6 border-2 border-black dark:border-white" />')
-    // paragraph (lines that aren't already wrapped in a tag)
-    .replace(/^(?!<[a-z]|\s*$)(.+)$/gm, '<p class="mb-3 leading-relaxed">$1</p>')
-    // blank lines → spacing
+    .replace(/\[\[([^\[\]]+)\]\]/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li[\s\S]+?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
+    .replace(/^---$/gm, '<hr />')
+    .replace(/^(?!<[a-z]|\s*$)(.+)$/gm, '<p>$1</p>')
     .replace(/^\s*$/gm, '');
 }
 
@@ -53,7 +48,7 @@ export default function ReportPage() {
 
   const handleDownloadPdf = useCallback(() => {
     if (!content) return;
-    const reportHtml = renderMarkdown(content);
+    const reportHtml = markdownToPrintHtml(content);
     const now = new Date();
     const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
     const docTitle = sessionTitle ? `${sessionTitle} - ${stamp}` : `Perfil Filosófico - ${stamp}`;
@@ -148,10 +143,7 @@ export default function ReportPage() {
             )}
             {content && (
               <div className="neo-card p-8">
-                <div
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                  className="text-[var(--text)]"
-                />
+                <MarkdownContent source={content} />
                 <span className="inline-block h-4 w-2 bg-emerald-600 dark:bg-emerald-400 animate-pulse ml-1 align-middle" />
               </div>
             )}
@@ -172,10 +164,7 @@ export default function ReportPage() {
         {status === 'complete' && content && (
           <div className="animate-fade-up">
             <div ref={reportRef} className="neo-card p-8">
-              <div
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                className="text-[var(--text)]"
-              />
+              <MarkdownContent source={content} />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3 justify-center">
