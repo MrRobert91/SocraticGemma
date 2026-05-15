@@ -361,14 +361,15 @@ async def _llm_call_non_streaming(prompt: str) -> str:
     client = GemmaClient()
     chunks: list[str] = []
     try:
-        async for chunk in client.generate(
+        async for evt_type, text in client.generate(
             prompt=prompt,
             model_name=_get_wiki_model(),
             max_tokens=2048,
             streaming=True,
             thinking_mode=False,
         ):
-            chunks.append(chunk)
+            if evt_type == "content":
+                chunks.append(text)
     finally:
         await client.close()
     return "".join(chunks)
