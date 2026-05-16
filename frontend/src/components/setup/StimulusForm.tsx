@@ -134,6 +134,11 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
 
       {mode === 'generator' && (
         <div className="space-y-3">
+          <p className="text-sm text-[var(--muted)]">
+            {isEs
+              ? 'Genera estímulos personalizados a partir de tus conversaciones previas, tu perfil filosófico y los temas conectados en tu wiki.'
+              : 'Generate personalised stimuli from your past conversations, philosophical profile, and the connected themes in your wiki.'}
+          </p>
           {noWiki && (
             <div className="rounded border-2 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {isEs

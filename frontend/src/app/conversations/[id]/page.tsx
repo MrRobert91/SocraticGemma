@@ -9,14 +9,14 @@ import { useSession } from '@/hooks/useSession';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
 const NEO_QTAG: Record<QuestionType, string> = {
-  conceptual:    'bg-violet-200 text-violet-900',
-  assumption:    'bg-amber-200  text-amber-900',
-  evidence:      'bg-sky-200    text-sky-900',
-  perspective:   'bg-emerald-200 text-emerald-900',
-  implication:   'bg-rose-200   text-rose-900',
+  conceptual: 'bg-violet-200 text-violet-900',
+  assumption: 'bg-amber-200 text-amber-900',
+  evidence: 'bg-sky-200 text-sky-900',
+  perspective: 'bg-emerald-200 text-emerald-900',
+  implication: 'bg-rose-200 text-rose-900',
   metacognitive: 'bg-indigo-200 text-indigo-900',
-  opening:       'bg-teal-200   text-teal-900',
-  statement:     'bg-gray-200   text-gray-900',
+  opening: 'bg-teal-200 text-teal-900',
+  statement: 'bg-gray-200 text-gray-900',
 };
 
 function renderMarkdown(text: string): string {
@@ -33,12 +33,6 @@ function renderMarkdown(text: string): string {
     .replace(/^\s*$/gm, '');
 }
 
-const AGE_LABELS: Record<string, string> = {
-  '6-8': '6–8 años',
-  '9-12': '9–12 años',
-  '13-16': '13–16 años',
-};
-
 function formatDate(ts: number): string {
   return new Date(ts * 1000).toLocaleDateString('es-ES', {
     weekday: 'long',
@@ -51,16 +45,13 @@ function formatDate(ts: number): string {
 }
 
 function TurnBlock({ turn }: { turn: ConversationTurn }) {
-  const [showThinking, setShowThinking] = useState(false);
-
   return (
     <div className="space-y-3 animate-fade-up">
-      {/* Child message */}
       {turn.child_input && (
         <div className="flex justify-end">
           <div className="max-w-[80%] flex flex-col items-end gap-1.5">
             <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 px-1">
-              👤 Usuario
+              Usuario
             </span>
             <div className="neo-card bg-[var(--accent-bg)] px-4 py-3">
               <p className="whitespace-pre-wrap leading-relaxed text-[var(--text)]">{turn.child_input}</p>
@@ -69,18 +60,17 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
         </div>
       )}
 
-      {/* AI message */}
       <div className="flex justify-start">
         <div className="max-w-[80%] flex flex-col items-start gap-1.5">
           <span className="text-xs font-black uppercase tracking-widest text-[var(--text)] px-1">
-            🤖 SocraticGemma
+            SocraticGemma
           </span>
           <div className="neo-card bg-[var(--bg-card)] px-4 py-3">
             <p className="whitespace-pre-wrap leading-relaxed text-[var(--text)]">{turn.content}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 px-1 mt-0.5">
-            {turn.question_type && (
+          {turn.question_type && (
+            <div className="flex flex-wrap items-center gap-2 px-1 mt-0.5">
               <span
                 className={`neo-tag text-xs px-2 py-0.5 ${
                   NEO_QTAG[turn.question_type as QuestionType] ?? 'bg-gray-200 text-gray-900'
@@ -88,20 +78,6 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
               >
                 {QUESTION_TYPE_LABELS[turn.question_type as QuestionType] ?? turn.question_type}
               </span>
-            )}
-            {turn.thinking_trace && (
-              <button
-                onClick={() => setShowThinking((v) => !v)}
-                className="text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] underline"
-              >
-                {showThinking ? 'Ocultar razonamiento' : 'Ver razonamiento'}
-              </button>
-            )}
-          </div>
-
-          {showThinking && turn.thinking_trace && (
-            <div className="neo-card mt-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-900 dark:text-indigo-200 whitespace-pre-wrap max-h-48 overflow-y-auto font-mono">
-              {turn.thinking_trace}
             </div>
           )}
         </div>
@@ -214,7 +190,6 @@ export default function ConversationDetailPage({
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
       <header
         className="bg-[var(--bg-card)] border-b-2 border-[var(--border)] sticky top-0 z-10"
         style={{ boxShadow: '0 4px 0 0 var(--border)' }}
@@ -225,7 +200,7 @@ export default function ConversationDetailPage({
             <span className="text-xl font-black tracking-tight text-[var(--text)]">SocraticGemma</span>
           </Link>
           <nav className="flex gap-2" aria-label="Navegación">
-            <Link href="/"             className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
+            <Link href="/" className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
             <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">← Conversaciones</Link>
           </nav>
         </div>
@@ -253,7 +228,6 @@ export default function ConversationDetailPage({
 
         {conv && (
           <>
-            {/* Conversation header card */}
             <div className="neo-card mb-8 p-5 animate-scale-in">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
@@ -261,30 +235,27 @@ export default function ConversationDetailPage({
                     {conv.stimulus.title || conv.stimulus.content}
                   </h2>
                   {conv.stimulus.title && (
-                  <p className="text-sm text-[var(--muted)] mt-1">{conv.stimulus.content}</p>
-                )}
+                    <p className="text-sm text-[var(--muted)] mt-1">{conv.stimulus.content}</p>
+                  )}
+                </div>
               </div>
-              <span className="shrink-0 neo-tag bg-[var(--accent-bg)] text-emerald-900 dark:text-emerald-100 text-sm px-3 py-1">
-                {AGE_LABELS[conv.age_group] ?? conv.age_group}
-              </span>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-4 text-xs font-semibold text-[var(--muted)]">
+                  <span>{formatDate(conv.created_at)}</span>
+                  <span>{conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
+                  <span>Modo lectura</span>
+                </div>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="neo-btn-danger shrink-0 px-3 py-1.5 text-xs"
+                >
+                  {deleting ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-4 text-xs font-semibold text-[var(--muted)]">
-                <span>🗓️ {formatDate(conv.created_at)}</span>
-                <span>💬 {conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
-                <span>🔒 Modo lectura</span>
-              </div>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="neo-btn-danger shrink-0 px-3 py-1.5 text-xs"
-              >
-                {deleting ? 'Eliminando…' : '🗑️ Eliminar'}
-              </button>
-            </div>
-          </div>
-            {/* Turns */}
             <div className="space-y-8">
               {conv.turns.length === 0 ? (
                 <p className="text-center text-[var(--muted)] py-12">
@@ -297,7 +268,6 @@ export default function ConversationDetailPage({
               )}
             </div>
 
-            {/* Continue conversation — add +5 turns and resume */}
             <div className="my-12 flex flex-col items-center gap-3">
               <button
                 onClick={handleContinue}
@@ -305,10 +275,10 @@ export default function ConversationDetailPage({
                 className="neo-btn px-8 py-5 text-lg font-black flex items-center gap-3 disabled:opacity-60 disabled:cursor-wait"
               >
                 {resuming ? (
-                  <>⏳ Preparando…</>
+                  <>Preparando...</>
                 ) : (
                   <>
-                    ▶ Continuar esta conversación
+                    Continuar esta conversación
                     <span className="text-sm font-bold opacity-80">(+5 turnos)</span>
                   </>
                 )}
@@ -321,18 +291,17 @@ export default function ConversationDetailPage({
               )}
             </div>
 
-            {/* Philosophical report */}
             {reportContent && (
               <div className="mt-10">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
-                    🗺️ Perfil Filosófico
+                    Perfil Filosófico
                   </h3>
                   <button
                     onClick={handleDownloadPdf}
                     className="neo-btn px-4 py-2 text-sm"
                   >
-                    🖨️ Imprimir / PDF
+                    Imprimir / PDF
                   </button>
                 </div>
                 <div ref={reportRef} className="neo-card p-6">
@@ -344,10 +313,9 @@ export default function ConversationDetailPage({
               </div>
             )}
 
-            {/* Footer */}
             <div className="mt-10 pt-6 border-t-2 border-[var(--border)] flex justify-between items-center text-sm font-semibold text-[var(--muted)]">
               <Link href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">
-                ← Volver a la lista
+                Volver a la lista
               </Link>
               <span>ID: {conv.id}</span>
             </div>

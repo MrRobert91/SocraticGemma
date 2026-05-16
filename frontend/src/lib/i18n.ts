@@ -27,7 +27,7 @@ export interface UITranslations {
   navLogin: string;
   navRegister: string;
   navLogout: string;
-  // Age selector
+  // Legacy age selector strings kept for compatibility with unused components
   ageGroupLabel: string;
   age_6_8: string;
   age_9_12: string;
@@ -47,7 +47,6 @@ export interface UITranslations {
   // Advanced options
   advancedOptionsLabel: string;
   ragLabel: string;
-  thinkingLabel: string;
   durationLabel: string;
   durationUnit: string;
   // Submit
@@ -66,7 +65,7 @@ const T: Record<LangCode, UITranslations> = {
     heroTitleLine1: 'La IA que pregunta',
     heroTitleLine2: 'en lugar de responder.',
     heroSubtitle:
-      'SocraticGemma usa el método socrático para guiar a niños, adolescentes y adultos en la exploración de ideas filosóficas a través del diálogo.',
+      'SocraticGemma se adapta al lenguaje del usuario y guía cada conversación con preguntas socráticas, recuperación de contexto, informes y memoria a largo plazo.',
     navConversations: 'Conversaciones',
     navLogin: 'Iniciar sesión',
     navRegister: 'Registrarse',
@@ -111,21 +110,20 @@ const T: Record<LangCode, UITranslations> = {
     presetsLabel: 'Sugerencias rápidas',
     advancedOptionsLabel: '⚙️ Opciones avanzadas',
     ragLabel: '📚 RAG habilitado',
-    thinkingLabel: '🧠 Mostrar razonamiento',
     durationLabel: '💬 Duración:',
     durationUnit: 'turnos',
     submitLabel: '🚀 Iniciar diálogo socrático',
     submitLoading: 'Creando sesión...',
     errorStimulusRequired: 'Por favor, introduce un estímulo o pregunta',
     footer:
-      'SocraticGemma usa Google Gemma para generar preguntas socráticas adaptadas a cada edad.',
+      'SocraticGemma usa Google Gemma para adaptarse al lenguaje del usuario y construir un mapa vivo de su pensamiento.',
   },
 
   en: {
     heroTitleLine1: 'The AI that asks',
     heroTitleLine2: 'instead of answering.',
     heroSubtitle:
-      'SocraticGemma uses the Socratic method to guide children, teenagers, and adults in exploring philosophical ideas through dialogue.',
+      'SocraticGemma adapts to the learner language, combining Socratic dialogue, retrieval, reports, and long-term memory.',
     navConversations: 'Conversations',
     navLogin: 'Log in',
     navRegister: 'Sign up',
@@ -169,14 +167,13 @@ const T: Record<LangCode, UITranslations> = {
     presetsLabel: 'Quick suggestions',
     advancedOptionsLabel: '⚙️ Advanced options',
     ragLabel: '📚 RAG enabled',
-    thinkingLabel: '🧠 Show reasoning',
     durationLabel: '💬 Length:',
     durationUnit: 'turns',
     submitLabel: '🚀 Start Socratic dialogue',
     submitLoading: 'Creating session…',
     errorStimulusRequired: 'Please enter a stimulus or question',
     footer:
-      'SocraticGemma uses Google Gemma to generate Socratic questions adapted to each age group.',
+      'SocraticGemma uses Google Gemma to adapt to the learner language and build a living map of their thinking.',
   },
 };
 

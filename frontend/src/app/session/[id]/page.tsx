@@ -13,7 +13,7 @@ export default function SessionPage() {
   const sessionId = params.id as string;
 
   const { getSession, loading: sessionLoading } = useSession();
-  const { sendMessage, tokens, thinking_trace, currentTurn, status, error, reset } = useDialogueStream();
+  const { sendMessage, tokens, currentTurn, status, error, reset } = useDialogueStream();
 
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [assistantTurnCount, setAssistantTurnCount] = useState(0);

@@ -2,7 +2,6 @@
 
 import { Turn } from '@/lib/types';
 import { QTypeTag } from './QTypeTag';
-import { ThinkingPanel } from './ThinkingPanel';
 
 interface MessageBubbleProps {
   turn: Turn;
@@ -50,13 +49,6 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
         {!isChild && turn.question_type && (
           <div className="mt-0.5">
             <QTypeTag type={turn.question_type} />
-          </div>
-        )}
-
-        {/* Thinking trace */}
-        {!isChild && turn.thinking_trace && (
-          <div className="mt-1 w-full">
-            <ThinkingPanel trace={turn.thinking_trace} isStreaming={isStreaming && !isChild} />
           </div>
         )}
 

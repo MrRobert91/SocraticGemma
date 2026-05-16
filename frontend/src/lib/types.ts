@@ -37,7 +37,6 @@ export interface CreateSessionRequest {
   stimulus: Stimulus;
   model_size?: 'fast' | 'accurate';
   rag_enabled?: boolean;
-  thinking_mode?: boolean;
   language?: string;
   total_turns?: number;
 }

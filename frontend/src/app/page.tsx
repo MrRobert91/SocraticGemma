@@ -27,7 +27,6 @@ export default function HomePage() {
     title: '',
   });
   const [ragEnabled, setRagEnabled] = useState(true);
-  const [thinkingMode, setThinkingMode] = useState(true);
   const [language, setLanguage] = useState('es');
   const [totalTurns, setTotalTurns] = useState(5);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -65,7 +64,6 @@ export default function HomePage() {
       const data: CreateSessionRequest = {
         stimulus,
         rag_enabled: ragEnabled,
-        thinking_mode: thinkingMode,
         language,
         total_turns: totalTurns,
       };
@@ -182,16 +180,6 @@ export default function HomePage() {
                       style={{ accentColor: 'var(--accent-dark)' }}
                     />
                     {t.ragLabel}
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
-                    <input
-                      type="checkbox"
-                      checked={thinkingMode}
-                      onChange={(e) => setThinkingMode(e.target.checked)}
-                      className="w-4 h-4 rounded border-2 border-black"
-                      style={{ accentColor: 'var(--accent-dark)' }}
-                    />
-                    {t.thinkingLabel}
                   </label>
                 </div>
 
