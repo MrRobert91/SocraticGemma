@@ -452,6 +452,56 @@ async def get_wiki_page_id(user_id: str, slug: str) -> Optional[str]:
     return row["id"] if row else None
 
 
+async def get_wiki_page_meta(user_id: str, slug: str) -> Optional[dict]:
+    """Return {id, slug, title, category, updated_at} for a given user+slug, or None."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, slug, title, category, updated_at FROM wiki_pages WHERE user_id = ? AND slug = ?",
+            (user_id, slug),
+        ) as cur:
+            row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_new_reports_for_user(user_id: str, since: float, limit: int = 15) -> list[dict]:
+    """Return reports created strictly after `since` (Unix timestamp), oldest first.
+
+    Used by the incremental global-profile synthesis to fetch only reports
+    that post-date the last profile update.
+    Each item: {session_id, stimulus_title, stimulus_content, created_at, content}.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT r.session_id, r.content, r.created_at, c.stimulus
+                 FROM reports r
+                 JOIN conversations c ON r.session_id = c.id
+                WHERE c.user_id = ?
+                  AND r.created_at > ?
+                ORDER BY r.created_at ASC
+                LIMIT ?""",
+            (user_id, since, limit),
+        ) as cur:
+            rows = await cur.fetchall()
+    out: list[dict] = []
+    for r in rows:
+        try:
+            stim = json.loads(r["stimulus"]) if r["stimulus"] else {}
+        except (json.JSONDecodeError, TypeError):
+            stim = {}
+        out.append(
+            {
+                "session_id": r["session_id"],
+                "stimulus_title": stim.get("title", ""),
+                "stimulus_content": stim.get("content", ""),
+                "created_at": r["created_at"],
+                "content": r["content"],
+            }
+        )
+    return out
+
+
 async def list_wiki_pages(user_id: str) -> list[dict]:
     """Return all wiki page records for a user."""
     async with aiosqlite.connect(DB_PATH) as db:

@@ -17,8 +17,10 @@ from ..config import settings
 from ..database import (
     delete_wiki_edges_for_page,
     get_full_session_for_wiki,
+    get_new_reports_for_user,
     get_wiki_graph,
     get_wiki_page_id,
+    get_wiki_page_meta,
     link_wiki_page_to_session,
     list_wiki_pages,
     upsert_wiki_edge,
@@ -383,7 +385,11 @@ Responde SOLO con JSON válido, sin texto adicional, sin markdown alrededor:
 _GLOBAL_PROFILE_PROMPT_TEMPLATE = """\
 Eres un sistema de síntesis del perfil filosófico GLOBAL de un usuario. Vas a producir el contenido completo de `_profile.md`, que sintetiza TODAS sus conversaciones filosóficas hasta hoy.
 
-## Informes filosóficos de todas las sesiones del usuario (más recientes primero)
+## Modo de síntesis
+
+{mode_note}
+
+## Informes filosóficos de las sesiones del usuario (orden cronológico)
 
 {reports_block}
 
@@ -612,17 +618,60 @@ def _guess_category_from_slug(slug: str) -> str:
 async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
     """Re-synthesise the user's global philosophical profile (_profile.md).
 
-    Pulls every report the user has, builds a prompt with the previous
-    profile as context, and asks the LLM for a single markdown blob.
+    Uses an incremental strategy: if a profile already exists, only fetches
+    reports created *after* the profile's last update timestamp and merges
+    them with the existing profile. This keeps prompt size bounded and
+    preserves all historical information through the previous profile text.
+
+    If no profile exists yet (bootstrap), falls back to the 10 most recent
+    reports to create the initial synthesis.
+
     Returns True on success.
     """
-    from ..database import get_all_reports_for_user  # local to avoid cycles
+    # ── Determine mode: incremental vs bootstrap ──────────────────────
+    profile_meta = await get_wiki_page_meta(user_id, "_profile")
 
-    reports = await get_all_reports_for_user(user_id, limit=20)
-    if not reports:
-        logger.info("[WIKI]   no reports for user — skipping global profile")
-        return False
+    if profile_meta is not None:
+        # Incremental: only reports newer than the last profile synthesis
+        profile_updated_at: float = profile_meta["updated_at"]
+        reports = await get_new_reports_for_user(user_id, since=profile_updated_at, limit=15)
+        if not reports:
+            age_days = (time.time() - profile_updated_at) / 86400
+            logger.info(
+                "[WIKI]   global-profile up-to-date (age=%.1fd) — no new reports since last synthesis, skipping LLM",
+                age_days,
+            )
+            return True
+        mode = "incremental"
+        mode_note = (
+            "Estas sesiones son NUEVAS (posteriores al perfil anterior mostrado abajo). "
+            "INTEGRA su contenido en el perfil sin descartar ni reemplazar lo que ya estaba. "
+            "El perfil anterior ya captura las sesiones más antiguas — no necesitas reescribirlo desde cero, "
+            "solo enriquecerlo con los nuevos hallazgos."
+        )
+        age_days = (time.time() - profile_updated_at) / 86400
+        logger.info(
+            "[WIKI]   global-profile: mode=incremental  new_reports=%d  profile_age_days=%.1f",
+            len(reports), age_days,
+        )
+    else:
+        # Bootstrap: no profile yet — use the 10 most recent reports
+        from ..database import get_all_reports_for_user  # local to avoid cycles
+        reports = await get_all_reports_for_user(user_id, limit=10)
+        if not reports:
+            logger.info("[WIKI]   no reports for user — skipping global profile")
+            return False
+        mode = "bootstrap"
+        mode_note = (
+            "No existe perfil previo. Sintetiza el perfil del usuario desde cero "
+            "a partir de estas sesiones."
+        )
+        logger.info(
+            "[WIKI]   global-profile: mode=bootstrap  reports=%d  (no previous profile)",
+            len(reports),
+        )
 
+    # ── Build reports block ───────────────────────────────────────────
     reports_block_parts: list[str] = []
     for r in reports:
         title = r["stimulus_title"] or r["stimulus_content"][:60] or "(sin título)"
@@ -633,6 +682,7 @@ async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
         )
     reports_block = "\n---\n".join(reports_block_parts)
 
+    # ── Load previous profile ─────────────────────────────────────────
     previous_profile = read_page(user_id, "_profile", "profile") or "(ninguno todavía)"
     previous_profile = re.sub(r"^---.*?---\s*", "", previous_profile, flags=re.DOTALL).strip()
     previous_profile = _BACKLINK_BLOCK_RE.sub("", previous_profile).strip() or "(ninguno todavía)"
@@ -643,17 +693,18 @@ async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
     ) or "(ninguna página aún)"
 
     prompt = _GLOBAL_PROFILE_PROMPT_TEMPLATE.format(
+        mode_note=mode_note,
         reports_block=reports_block,
         previous_profile=previous_profile,
         known_slugs=known_slugs,
         language=language,
     )
     logger.info(
-        "[WIKI]   global-profile prompt: %d chars, %d reports",
-        len(prompt), len(reports),
+        "[WIKI]   global-profile prompt: %d chars, %d reports, mode=%s",
+        len(prompt), len(reports), mode,
     )
 
-    # This is plain markdown, not JSON.
+    # ── LLM call (plain markdown, not JSON) ───────────────────────────
     content = await _llm_call_non_streaming(prompt, max_tokens=4096)
     if not content.strip():
         logger.warning("[WIKI]   global-profile LLM returned empty content")
@@ -680,8 +731,8 @@ async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
     await sync_graph_edges(user_id)
 
     logger.info(
-        "[WIKI]   global profile written: %d chars, linked to %d slugs",
-        len(content), len(parse_wiki_links(content)),
+        "[WIKI]   global profile written: %d chars, linked to %d slugs, mode=%s",
+        len(content), len(parse_wiki_links(content)), mode,
     )
     return True
 
