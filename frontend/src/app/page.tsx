@@ -26,10 +26,7 @@ export default function HomePage() {
     content: '',
     title: '',
   });
-  const [ragEnabled, setRagEnabled] = useState(true);
   const [language, setLanguage] = useState('es');
-  const [totalTurns, setTotalTurns] = useState(5);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const t = getTranslations(language as LangCode);
 
@@ -63,9 +60,9 @@ export default function HomePage() {
     try {
       const data: CreateSessionRequest = {
         stimulus,
-        rag_enabled: ragEnabled,
+        rag_enabled: true,
         language,
-        total_turns: totalTurns,
+        total_turns: 5,
       };
       const sessionId = await createSession(data);
       router.push(`/session/${sessionId}`);
@@ -149,66 +146,6 @@ export default function HomePage() {
             <Presets onSelect={handlePresetSelect} lang={language as LangCode} />
           </section>
 
-          {/* Advanced options */}
-          <section className="neo-card animate-fade-up">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between px-6 py-4 text-left"
-              aria-expanded={showAdvanced}
-            >
-              <span className="font-black text-sm uppercase tracking-widest text-[var(--text)]">
-                {t.advancedOptionsLabel}
-              </span>
-              <span
-                aria-hidden="true"
-                className={`text-xs font-bold transition-transform duration-150 ${showAdvanced ? 'rotate-180' : ''}`}
-              >
-                ▼
-              </span>
-            </button>
-
-            {showAdvanced && (
-              <div className="px-6 pb-6 space-y-5 border-t-2 border-[var(--border)] pt-5">
-                <div className="flex flex-wrap gap-5">
-                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
-                    <input
-                      type="checkbox"
-                      checked={ragEnabled}
-                      onChange={(e) => setRagEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded border-2 border-black"
-                      style={{ accentColor: 'var(--accent-dark)' }}
-                    />
-                    {t.ragLabel}
-                  </label>
-                </div>
-
-                <div>
-                  <label className="neo-label">
-                    {t.durationLabel}{' '}
-                    <span className="font-black" style={{ color: 'var(--accent-dark)' }}>
-                      {totalTurns} {t.durationUnit}
-                    </span>
-                  </label>
-                  <input
-                    type="range"
-                    min={1}
-                    max={50}
-                    step={1}
-                    value={totalTurns}
-                    onChange={(e) => setTotalTurns(Number(e.target.value))}
-                    className="w-full h-2 cursor-pointer"
-                    style={{ accentColor: 'var(--accent-dark)' }}
-                    aria-label={`${t.durationLabel} ${totalTurns} ${t.durationUnit}`}
-                  />
-                  <div className="flex justify-between text-xs font-bold text-[var(--muted)] mt-1">
-                    <span>1</span>
-                    <span>50</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
 
           {/* Error */}
           {error && (
