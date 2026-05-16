@@ -4,7 +4,7 @@ import threading
 import time
 from typing import Optional
 
-from ..models import Session
+from ..models import EvalScores, Session, Turn
 from ..config import settings
 
 
@@ -108,6 +108,69 @@ class SessionStore:
             for sid in expired_ids:
                 del self._sessions[sid]
             return len(expired_ids)
+
+    def rebuild_and_register(self, data: dict, extra_turns: int = 5) -> Session:
+        """Reconstruct an in-memory Session from a DB snapshot and register it.
+
+        Used when the user reanudates a past conversation: rebuilds the
+        Session dataclass with all its turns, bumps `total_turns` by
+        `extra_turns`, and resets `created_at` so the TTL doesn't expire
+        the session mid-continuation.
+
+        If the session already exists in memory (and isn't expired), just
+        bump its `total_turns` by `extra_turns` and return it.
+        """
+        session_id = data["session_id"]
+        with self._lock:
+            existing = self._sessions.get(session_id)
+            if existing is not None and not self._is_expired(existing):
+                existing.total_turns = (existing.total_turns or len(existing.turns)) + extra_turns
+                # Reset created_at so the resumed session has a fresh TTL window
+                existing.created_at = time.time()
+                return existing
+
+            turns: list[Turn] = []
+            for td in data.get("turns", []):
+                es = td.get("eval_scores") or {}
+                scores = EvalScores(
+                    socratism=es.get("socratism", 3.0),
+                    age_fit=es.get("age_fit", 3.0),
+                    builds_on=es.get("builds_on", 3.0),
+                    openness=es.get("openness", 3.0),
+                    advancement=es.get("advancement", 3.0),
+                    overall=es.get("overall", 3.0),
+                )
+                turns.append(
+                    Turn(
+                        id=td.get("id", len(turns)),
+                        content=td.get("content", ""),
+                        question_type=td.get("question_type", "conceptual"),
+                        child_input=td.get("child_input", ""),
+                        thinking_trace=td.get("thinking_trace", ""),
+                        eval_scores=scores,
+                        forbidden_behaviors_detected=td.get("forbidden_behaviors_detected", []),
+                        rag_moves_used=td.get("rag_moves_used", []),
+                        timestamp=td.get("timestamp", 0.0),
+                    )
+                )
+
+            session = Session(
+                session_id=session_id,
+                age_group=data.get("age_group", "9-12"),
+                stimulus=data.get("stimulus", {}),
+                model_size=data.get("model_size", "fast"),
+                language=data.get("language", "es"),
+                turns=turns,
+                total_turns=len(turns) + extra_turns,
+                created_at=time.time(),
+            )
+            # These two are attached dynamically by the create-session endpoint
+            # too, so we mirror that here for consistency with the rest of the code.
+            session.user_id = data.get("user_id")
+            session.thinking_mode = data.get("thinking_mode", True)
+
+            self._sessions[session_id] = session
+            return session
 
     def get_all_sessions(self) -> list:
         """Get all non-expired sessions.

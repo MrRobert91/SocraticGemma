@@ -1,6 +1,7 @@
 """Report generation service — produces a philosophical profile of the participant."""
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
@@ -9,6 +10,8 @@ import yaml
 from ..config import settings
 from ..models import Session
 from .gemma_client import GemmaClient, gemma_client as default_gemma_client
+
+logger = logging.getLogger(__name__)
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
@@ -78,3 +81,48 @@ async def generate_report(
     ):
         if evt_type == "content" and chunk:
             yield chunk
+
+
+async def regenerate_report_silent(session: Session) -> bool:
+    """Generate the report and persist it to DB, no SSE / no streaming to caller.
+
+    Used by the dialogue end-of-session hook so that finishing the (possibly
+    resumed) conversation automatically refreshes the stored report — the user
+    doesn't have to click "Generate report" again to see the updated profile.
+
+    Does NOT trigger wiki synthesis: the dialogue hook already does that in
+    parallel. Returns True on success.
+    """
+    try:
+        if not session.turns:
+            logger.warning(
+                "[REPORT-SILENT] session %s has no turns — skipping",
+                session.session_id,
+            )
+            return False
+
+        chunks: list[str] = []
+        async for chunk in generate_report(session):
+            chunks.append(chunk)
+        content = "".join(chunks).strip()
+
+        if not content:
+            logger.warning(
+                "[REPORT-SILENT] empty content for session %s — skipping save",
+                session.session_id,
+            )
+            return False
+
+        from ..database import save_report  # local import to avoid cycle
+        await save_report(session.session_id, content)
+        logger.info(
+            "[REPORT-SILENT] regenerated and saved session=%s chars=%d",
+            session.session_id, len(content),
+        )
+        return True
+    except Exception:
+        logger.exception(
+            "[REPORT-SILENT] failed for session=%s",
+            session.session_id,
+        )
+        return False

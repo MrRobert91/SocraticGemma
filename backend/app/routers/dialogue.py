@@ -130,6 +130,21 @@ async def process_turn(
                                     )
                                 except Exception:
                                     logger.exception("[WIKI-TRIGGER] failed to queue wiki synthesis")
+
+                                # Also regenerate the report silently so the user
+                                # sees the up-to-date profile on /conversations/{id}
+                                # without having to click "Generate report" again.
+                                try:
+                                    from ..services.report_service import regenerate_report_silent
+                                    asyncio.ensure_future(regenerate_report_silent(session_now))
+                                    logger.info(
+                                        "[REPORT-TRIGGER] queued silent regeneration  session=%s",
+                                        session_id,
+                                    )
+                                except Exception:
+                                    logger.exception(
+                                        "[REPORT-TRIGGER] failed to queue silent report regeneration",
+                                    )
                             else:
                                 logger.info(
                                     "[WIKI-TRIGGER] skipped — session not finished (%d/%d turns)",

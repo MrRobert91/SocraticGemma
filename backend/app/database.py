@@ -563,6 +563,75 @@ async def get_sessions_for_wiki_page(wiki_page_id: str) -> list[str]:
     return [r["session_id"] for r in rows]
 
 
+async def load_session_full(session_id: str, user_id: str) -> Optional[dict]:
+    """Return every field needed to rebuild an in-memory Session for the owner.
+
+    Verifies the session belongs to `user_id`. Returns None if missing or
+    owned by someone else. Includes all turn fields needed by the dialogue
+    pipeline (input, content, scores, thinking_trace, rag moves, timestamp).
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM conversations WHERE id = ? AND user_id = ?",
+            (session_id, user_id),
+        ) as cur:
+            conv = await cur.fetchone()
+        if conv is None:
+            return None
+        async with db.execute(
+            """SELECT turn_index, child_input, content, question_type, thinking_trace,
+                      eval_socratism, eval_age_fit, eval_builds_on, eval_openness,
+                      eval_advancement, eval_overall, forbidden_behaviors,
+                      rag_moves_used, timestamp
+                 FROM turns
+                WHERE session_id = ?
+                ORDER BY turn_index ASC""",
+            (session_id,),
+        ) as cur:
+            turn_rows = await cur.fetchall()
+
+    def _safe_json_list(raw):
+        if not raw:
+            return []
+        try:
+            v = json.loads(raw)
+            return v if isinstance(v, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    return {
+        "session_id": session_id,
+        "user_id": user_id,
+        "age_group": conv["age_group"],
+        "stimulus": json.loads(conv["stimulus"]) if conv["stimulus"] else {},
+        "model_size": conv["model_size"],
+        "language": conv["language"],
+        "created_at": conv["created_at"],
+        "turns": [
+            {
+                "id": t["turn_index"],
+                "child_input": t["child_input"] or "",
+                "content": t["content"] or "",
+                "question_type": t["question_type"] or "conceptual",
+                "thinking_trace": t["thinking_trace"] or "",
+                "eval_scores": {
+                    "socratism": t["eval_socratism"] if t["eval_socratism"] is not None else 3.0,
+                    "age_fit": t["eval_age_fit"] if t["eval_age_fit"] is not None else 3.0,
+                    "builds_on": t["eval_builds_on"] if t["eval_builds_on"] is not None else 3.0,
+                    "openness": t["eval_openness"] if t["eval_openness"] is not None else 3.0,
+                    "advancement": t["eval_advancement"] if t["eval_advancement"] is not None else 3.0,
+                    "overall": t["eval_overall"] if t["eval_overall"] is not None else 3.0,
+                },
+                "forbidden_behaviors_detected": _safe_json_list(t["forbidden_behaviors"]),
+                "rag_moves_used": _safe_json_list(t["rag_moves_used"]),
+                "timestamp": t["timestamp"] or 0.0,
+            }
+            for t in turn_rows
+        ],
+    }
+
+
 async def get_full_session_for_wiki(session_id: str) -> Optional[dict]:
     """Return session + turns + report content for wiki synthesis (no user check)."""
     async with aiosqlite.connect(DB_PATH) as db:

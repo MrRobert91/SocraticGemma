@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
+import { useSession } from '@/hooks/useSession';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -122,6 +123,21 @@ export default function ConversationDetailPage({
   const [reportContent, setReportContent] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const [deleting, setDeleting] = useState(false);
+  const { resumeSession } = useSession();
+  const [resuming, setResuming] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+
+  const handleContinue = useCallback(async () => {
+    setResuming(true);
+    setResumeError(null);
+    try {
+      await resumeSession(id);
+      router.push(`/session/${id}`);
+    } catch (e) {
+      setResumeError(e instanceof Error ? e.message : 'Error desconocido');
+      setResuming(false);
+    }
+  }, [id, resumeSession, router]);
 
   const handleDelete = useCallback(async () => {
     if (!confirm('¿Eliminar esta conversación? Esta acción no se puede deshacer.')) return;
@@ -278,6 +294,30 @@ export default function ConversationDetailPage({
                 conv.turns.map((turn) => (
                   <TurnBlock key={turn.id} turn={turn} />
                 ))
+              )}
+            </div>
+
+            {/* Continue conversation — add +5 turns and resume */}
+            <div className="my-12 flex flex-col items-center gap-3">
+              <button
+                onClick={handleContinue}
+                disabled={resuming}
+                className="neo-btn px-8 py-5 text-lg font-black flex items-center gap-3 disabled:opacity-60 disabled:cursor-wait"
+              >
+                {resuming ? (
+                  <>⏳ Preparando…</>
+                ) : (
+                  <>
+                    ▶ Continuar esta conversación
+                    <span className="text-sm font-bold opacity-80">(+5 turnos)</span>
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-[var(--muted)] text-center max-w-md">
+                Retoma el diálogo donde lo dejaste. Al terminar se actualizarán el informe, la wiki y tu perfil filosófico global.
+              </p>
+              {resumeError && (
+                <p className="text-xs text-rose-600 font-semibold">{resumeError}</p>
               )}
             </div>
 

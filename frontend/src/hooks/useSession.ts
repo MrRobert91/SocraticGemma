@@ -51,5 +51,35 @@ export function useSession() {
     }
   }, []);
 
-  return { createSession, getSession, loading, error };
+  /**
+   * Resume a past conversation: rehydrate it server-side and extend its
+   * total_turns by 5. Returns the new total_turns so the caller can show
+   * confirmation if desired.
+   */
+  const resumeSession = useCallback(
+    async (id: string): Promise<{ session_id: string; total_turns: number }> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_BASE}/conversations/${id}/resume`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => '');
+          throw new Error(`No se pudo reanudar la conversación (${response.status}). ${detail}`);
+        }
+        return await response.json();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  return { createSession, getSession, resumeSession, loading, error };
 }
