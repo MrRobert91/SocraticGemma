@@ -28,6 +28,13 @@ function transformWikiLinks(text: string): string {
   });
 }
 
+// Drop HTML comments (e.g. `<!-- backlinks:start -->`) — react-markdown by
+// default echoes them as plain text instead of treating them as comments,
+// so they would appear as ugly literals in the rendered output.
+function stripHtmlComments(text: string): string {
+  return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 const buildComponents = (
   compact: boolean,
   onWikiLinkClick?: (slug: string) => void,
@@ -162,7 +169,7 @@ export function MarkdownContent({
   className = '',
   onWikiLinkClick,
 }: MarkdownContentProps) {
-  const processed = transformWikiLinks(source ?? '');
+  const processed = transformWikiLinks(stripHtmlComments(source ?? ''));
   return (
     <div className={className}>
       <ReactMarkdown

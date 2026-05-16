@@ -22,6 +22,7 @@ import '@xyflow/react/dist/style.css';
 import { useWikiGraph, useWikiPage, useWikiStatus } from '@/hooks/useWiki';
 import { WikiNode } from '@/lib/types';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { Tooltip } from '@/components/Tooltip';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -63,7 +64,10 @@ function stripFrontmatter(md: string): string {
 
 function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } }) {
   const colors = CATEGORY_COLORS[data.category] ?? CATEGORY_COLORS.topic;
-  const size = Math.max(36, 36 + data.session_count * 8);
+  const isProfile = data.category === 'profile';
+  // Profile is the user's central hub: always larger, with an icon, so it
+  // stands out even when the other nodes are small (session_count==0 cases).
+  const size = isProfile ? 88 : Math.max(36, 36 + data.session_count * 8);
   // Hidden handles are required so React Flow can anchor edges to this custom
   // node. Without them the canvas renders nodes but the edges have nowhere
   // to attach, so they disappear visually.
@@ -76,42 +80,56 @@ function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } })
     pointerEvents: 'none' as const,
   };
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: colors.bg,
-        border: `2.5px solid ${colors.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        boxShadow: data.selected ? `0 0 0 3px ${colors.border}` : '2px 2px 0 0 #222',
-        transition: 'box-shadow 0.1s',
-        position: 'relative',
-      }}
-      title={data.title}
-    >
-      <Handle type="target" position={Position.Top} style={handleStyle} isConnectable={false} />
-      <Handle type="source" position={Position.Bottom} style={handleStyle} isConnectable={false} />
-      <span
+    <Tooltip content={data.title} side="top">
+      <div
         style={{
-          fontSize: Math.max(9, Math.min(12, size / 4)),
-          fontWeight: 700,
-          color: colors.text,
-          textAlign: 'center',
-          lineHeight: 1.1,
-          padding: '2px 4px',
-          maxWidth: size - 8,
-          overflow: 'hidden',
-          wordBreak: 'break-word',
-          display: 'block',
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          background: colors.bg,
+          border: `${isProfile ? 3 : 2.5}px solid ${colors.border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: data.selected
+            ? `0 0 0 3px ${colors.border}`
+            : isProfile
+              ? '4px 4px 0 0 #222'
+              : '2px 2px 0 0 #222',
+          transition: 'box-shadow 0.1s',
+          position: 'relative',
+          gap: isProfile ? 2 : 0,
         }}
       >
-        {data.title.length > 12 ? data.title.slice(0, 11) + '…' : data.title}
-      </span>
-    </div>
+        <Handle type="target" position={Position.Top} style={handleStyle} isConnectable={false} />
+        <Handle type="source" position={Position.Bottom} style={handleStyle} isConnectable={false} />
+        {isProfile && (
+          <span style={{ fontSize: 26, lineHeight: 1 }} aria-hidden="true">🧠</span>
+        )}
+        <span
+          style={{
+            fontSize: isProfile ? 10 : Math.max(9, Math.min(12, size / 4)),
+            fontWeight: 700,
+            color: colors.text,
+            textAlign: 'center',
+            lineHeight: 1.1,
+            padding: isProfile ? '0 4px' : '2px 4px',
+            maxWidth: size - 8,
+            overflow: 'hidden',
+            wordBreak: 'break-word',
+            display: 'block',
+          }}
+        >
+          {isProfile
+            ? 'Perfil'
+            : data.title.length > 12
+              ? data.title.slice(0, 11) + '…'
+              : data.title}
+        </span>
+      </div>
+    </Tooltip>
   );
 }
 
@@ -185,14 +203,15 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
       style={{ width, boxShadow: '-4px 0 0 0 var(--border)' }}
     >
       {/* Drag handle on the LEFT edge of the panel */}
-      <div
-        onMouseDown={onPointerDown}
-        className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize bg-[var(--border)] hover:bg-[var(--accent)] active:bg-[var(--accent-dark)] z-30 transition-colors"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Redimensionar panel"
-        title="Arrastra para redimensionar"
-      />
+      <Tooltip content="Arrastra para redimensionar" side="right">
+        <div
+          onMouseDown={onPointerDown}
+          className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize bg-[var(--border)] hover:bg-[var(--accent)] active:bg-[var(--accent-dark)] z-30 transition-colors"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Redimensionar panel"
+        />
+      </Tooltip>
 
       <div className="flex items-center justify-between p-4 border-b-2 border-[var(--border)] sticky top-0 bg-[var(--bg-card)] z-10">
         <h3 className="font-black text-sm text-[var(--text)] truncate pr-2">
@@ -267,21 +286,40 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
 // ─── Layout helpers ───────────────────────────────────────────────────────────
 
 function layoutNodes(wikiNodes: WikiNode[]): Node[] {
-  // Simple circular layout
-  const n = wikiNodes.length;
-  return wikiNodes.map((node, i) => {
+  // The profile node sits in the centre as the hub; everyone else radiates
+  // out so its many outgoing edges fan out instead of crossing the canvas.
+  const profile = wikiNodes.find((n) => n.category === 'profile');
+  const others = wikiNodes.filter((n) => n.category !== 'profile');
+  const n = others.length;
+  const radius = Math.max(220, n * 34);
+  const cx = 400;
+  const cy = 300;
+  const PROFILE_SIZE = 88;
+  const OTHER_SIZE_BASE = 36;
+
+  const out: Node[] = [];
+  if (profile) {
+    out.push({
+      id: profile.id,
+      type: 'wiki',
+      position: { x: cx - PROFILE_SIZE / 2, y: cy - PROFILE_SIZE / 2 },
+      data: { ...profile, selected: false },
+    });
+  }
+  others.forEach((node, i) => {
     const angle = (2 * Math.PI * i) / Math.max(n, 1);
-    const radius = Math.max(150, n * 30);
-    return {
+    const halfSize = (OTHER_SIZE_BASE + node.session_count * 8) / 2;
+    out.push({
       id: node.id,
       type: 'wiki',
       position: {
-        x: 400 + radius * Math.cos(angle),
-        y: 300 + radius * Math.sin(angle),
+        x: cx + radius * Math.cos(angle) - halfSize,
+        y: cy + radius * Math.sin(angle) - halfSize,
       },
       data: { ...node, selected: false },
-    };
+    });
   });
+  return out;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -369,14 +407,14 @@ function WikiGraphInner() {
             <h1 className="text-xl font-black text-[var(--text)]">Tu wiki filosófico</h1>
           </div>
           <div className="flex gap-2 items-center">
-            {/* Legend with per-category tooltip on hover */}
+            {/* Legend with per-category tooltip on hover (portal-based) */}
             <div className="hidden sm:flex gap-3 text-xs font-semibold mr-2">
               {Object.entries(CATEGORY_COLORS).map(([cat, c]) => (
-                <span
+                <Tooltip
                   key={cat}
-                  className="group relative flex items-center gap-1 cursor-help"
-                  tabIndex={0}
-                  aria-label={`${cat}: ${CATEGORY_LABELS[cat] ?? ''}`}
+                  content={CATEGORY_LABELS[cat] ?? ''}
+                  side="bottom"
+                  className="flex items-center gap-1 cursor-help"
                 >
                   <span
                     style={{
@@ -389,19 +427,7 @@ function WikiGraphInner() {
                     }}
                   />
                   {cat}
-                  <span
-                    role="tooltip"
-                    className="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100
-                               transition-opacity duration-100
-                               absolute top-full right-0 mt-2 z-50
-                               w-60 text-xs font-semibold text-[var(--text)] leading-snug
-                               bg-[var(--bg-card)] border-2 border-[var(--border)] p-2 rounded
-                               shadow-[2px_2px_0_0_var(--border)]
-                               whitespace-normal text-left"
-                  >
-                    {CATEGORY_LABELS[cat] ?? ''}
-                  </span>
-                </span>
+                </Tooltip>
               ))}
             </div>
             <a

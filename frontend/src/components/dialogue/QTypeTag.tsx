@@ -1,6 +1,7 @@
 'use client';
 
 import { QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
+import { Tooltip } from '@/components/Tooltip';
 
 interface QTypeTagProps {
   type: QuestionType;
@@ -32,11 +33,10 @@ const DESCRIPTIONS: Record<QuestionType, string> = {
 export function QTypeTag({ type, size = 'sm' }: QTypeTagProps) {
   const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1';
   return (
-    <span
-      className={`neo-tag ${NEO_COLORS[type]} ${sizeClasses}`}
-      title={DESCRIPTIONS[type]}
-    >
-      {QUESTION_TYPE_LABELS[type]}
-    </span>
+    <Tooltip content={DESCRIPTIONS[type]} side="top">
+      <span className={`neo-tag ${NEO_COLORS[type]} ${sizeClasses}`}>
+        {QUESTION_TYPE_LABELS[type]}
+      </span>
+    </Tooltip>
   );
 }

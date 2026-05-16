@@ -2,6 +2,7 @@
 
 import { Stimulus } from '@/lib/types';
 import { getTranslations, LangCode } from '@/lib/i18n';
+import { Tooltip } from '@/components/Tooltip';
 
 interface StimulusFormProps {
   stimulus: Stimulus;
@@ -24,7 +25,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
         <span className="neo-label">{t.stimulusTypeLabel}</span>
         <div className="flex gap-2 flex-wrap">
           {Object.entries(STIMULUS_META).map(([value, m]) => (
-            <div key={value} className="relative group">
+            <Tooltip key={value} content={m.tooltip} side="top">
               <button
                 type="button"
                 onClick={() => onChange({ ...stimulus, type: value as Stimulus['type'] })}
@@ -35,23 +36,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
                 <span>{m.icon}</span>
                 <span>{m.label}</span>
               </button>
-              {/* Tooltip */}
-              <div
-                role="tooltip"
-                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20
-                           w-56 px-3 py-2 text-xs font-medium leading-snug
-                           bg-[var(--text)] text-[var(--bg)] border-2 border-[var(--border)]
-                           opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                style={{ borderRadius: '4px' }}
-              >
-                {m.tooltip}
-                {/* Arrow */}
-                <span
-                  className="absolute top-full left-1/2 -translate-x-1/2 -mt-px
-                             border-4 border-transparent border-t-[var(--text)]"
-                />
-              </div>
-            </div>
+            </Tooltip>
           ))}
         </div>
       </div>

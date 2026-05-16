@@ -1,6 +1,7 @@
 'use client';
 
 import { EvalScores } from '@/lib/types';
+import { Tooltip } from '@/components/Tooltip';
 
 interface ScoreMiniProps {
   scores: EvalScores;
@@ -39,14 +40,12 @@ export function ScoreMini({ scores }: ScoreMiniProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {SCORE_KEYS.map((key) => (
-        <div
-          key={key}
-          className={`neo-tag ${scoreBg(scores[key])} flex flex-col items-center px-2 py-1`}
-          title={DESCRIPTIONS[key]}
-        >
-          <span className="text-sm font-black leading-tight">{scores[key].toFixed(1)}</span>
-          <span className="text-[10px] leading-tight mt-0.5">{LABELS[key]}</span>
-        </div>
+        <Tooltip key={key} content={DESCRIPTIONS[key]} side="top">
+          <div className={`neo-tag ${scoreBg(scores[key])} flex flex-col items-center px-2 py-1`}>
+            <span className="text-sm font-black leading-tight">{scores[key].toFixed(1)}</span>
+            <span className="text-[10px] leading-tight mt-0.5">{LABELS[key]}</span>
+          </div>
+        </Tooltip>
       ))}
     </div>
   );
