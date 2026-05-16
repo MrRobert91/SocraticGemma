@@ -331,6 +331,7 @@ function WikiGraphInner() {
   const [panelWidth, setPanelWidth] = useState<number>(PANEL_DEFAULT_WIDTH);
   const [rebuilding, setRebuilding] = useState(false);
   const [rebuildMsg, setRebuildMsg] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Hydrate panel width from localStorage after mount (SSR-safe).
   useEffect(() => {
@@ -365,6 +366,16 @@ function WikiGraphInner() {
     refetchGraph();
     refetchStatus();
   }, [refetchGraph, refetchStatus]);
+
+  const handleSyncEdges = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await fetch(`${API_BASE}/wiki/sync-edges`, { method: 'POST', credentials: 'include' });
+      refetchGraph();
+    } finally {
+      setSyncing(false);
+    }
+  }, [refetchGraph]);
 
   // useNodesState only initialises once. Without the effect below the canvas
   // stays empty forever because the graph hook loads asynchronously and the
@@ -430,6 +441,16 @@ function WikiGraphInner() {
                 </Tooltip>
               ))}
             </div>
+            {graph && graph.nodes.length > 0 && (
+              <button
+                onClick={handleSyncEdges}
+                disabled={syncing}
+                className="neo-btn-ghost px-3 py-1.5 text-xs"
+                title="Reconstruye las relaciones del grafo sin regenerar el contenido"
+              >
+                {syncing ? '⏳ Sincronizando…' : '🔗 Sincronizar grafo'}
+              </button>
+            )}
             <a
               href={`${process.env.NEXT_PUBLIC_API_URL ?? '/api/backend'}/wiki/export`}
               download="wiki.zip"
