@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   ReactFlow,
@@ -21,10 +21,11 @@ import '@xyflow/react/dist/style.css';
 
 import { useWikiGraph, useWikiPage, useWikiStatus } from '@/hooks/useWiki';
 import { WikiNode } from '@/lib/types';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
-// ─── Category colours ─────────────────────────────────────────────────────────
+// ─── Category colours + legend tooltips ───────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   topic:   { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a5f' },
@@ -32,6 +33,31 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string
   reading: { bg: '#fee2e2', border: '#dc2626', text: '#7f1d1d' },
   profile: { bg: '#fef9c3', border: '#ca8a04', text: '#713f12' },
 };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  topic:   'Tema filosófico que has explorado en tus conversaciones',
+  stream:  'Corriente filosófica (utilitarismo, estoicismo…) relacionada con tus ideas',
+  reading: 'Libro o ensayo recomendado por tu perfil',
+  profile: 'Tu perfil filosófico global, síntesis de todas tus sesiones',
+};
+
+// ─── Resizable panel constants ────────────────────────────────────────────────
+
+const PANEL_WIDTH_KEY = 'wiki-panel-width';
+const PANEL_MIN_WIDTH = 280;
+const PANEL_DEFAULT_WIDTH = 360;
+
+function readStoredPanelWidth(): number {
+  if (typeof window === 'undefined') return PANEL_DEFAULT_WIDTH;
+  const raw = window.localStorage.getItem(PANEL_WIDTH_KEY);
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return PANEL_DEFAULT_WIDTH;
+  return Math.max(PANEL_MIN_WIDTH, Math.min(n, window.innerWidth * 0.75));
+}
+
+function stripFrontmatter(md: string): string {
+  return md.replace(/^---[\s\S]*?---\s*/m, '').trim();
+}
 
 // ─── Custom node ──────────────────────────────────────────────────────────────
 
@@ -93,15 +119,82 @@ const nodeTypes = { wiki: WikiNodeComponent };
 
 // ─── Side panel ───────────────────────────────────────────────────────────────
 
-function SlidePanel({ slug, onClose }: { slug: string; onClose: () => void }) {
+interface SlidePanelProps {
+  slug: string;
+  width: number;
+  onClose: () => void;
+  onSelectSlug: (slug: string) => void;
+  onWidthChange: (w: number) => void;
+}
+
+function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: SlidePanelProps) {
   const { page, loading, error } = useWikiPage(slug);
+
+  // Drag state lives in refs to avoid re-renders during the move.
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  const onPointerDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragRef.current = { startX: e.clientX, startW: width };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMove = (ev: MouseEvent) => {
+        if (!dragRef.current) return;
+        // Pointer moves LEFT → panel grows (we anchor to right edge).
+        const dx = dragRef.current.startX - ev.clientX;
+        const max = window.innerWidth * 0.75;
+        const next = Math.max(PANEL_MIN_WIDTH, Math.min(dragRef.current.startW + dx, max));
+        onWidthChange(next);
+      };
+
+      const onUp = () => {
+        dragRef.current = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        try {
+          window.localStorage.setItem(PANEL_WIDTH_KEY, String(width));
+        } catch {
+          /* ignore quota / disabled storage */
+        }
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [width, onWidthChange],
+  );
+
+  // Persist on every width change (the mouseup handler also does it, but
+  // doing it here covers the case where the user closes the panel mid-drag).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(PANEL_WIDTH_KEY, String(width));
+    } catch {
+      /* ignore */
+    }
+  }, [width]);
 
   return (
     <div
-      className="absolute right-0 top-0 h-full w-80 bg-[var(--bg-card)] border-l-2 border-[var(--border)] shadow-2xl overflow-y-auto z-20 flex flex-col"
-      style={{ boxShadow: '-4px 0 0 0 var(--border)' }}
+      className="absolute right-0 top-0 h-full bg-[var(--bg-card)] border-l-2 border-[var(--border)] overflow-y-auto z-20 flex flex-col"
+      style={{ width, boxShadow: '-4px 0 0 0 var(--border)' }}
     >
-      <div className="flex items-center justify-between p-4 border-b-2 border-[var(--border)] sticky top-0 bg-[var(--bg-card)]">
+      {/* Drag handle on the LEFT edge of the panel */}
+      <div
+        onMouseDown={onPointerDown}
+        className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize bg-[var(--border)] hover:bg-[var(--accent)] active:bg-[var(--accent-dark)] z-30 transition-colors"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Redimensionar panel"
+        title="Arrastra para redimensionar"
+      />
+
+      <div className="flex items-center justify-between p-4 border-b-2 border-[var(--border)] sticky top-0 bg-[var(--bg-card)] z-10">
         <h3 className="font-black text-sm text-[var(--text)] truncate pr-2">
           {page?.title ?? slug}
         </h3>
@@ -132,10 +225,14 @@ function SlidePanel({ slug, onClose }: { slug: string; onClose: () => void }) {
             )}
           </div>
 
-          {/* Content preview — strip YAML front-matter */}
-          <pre className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap font-mono bg-[var(--bg)] p-3 rounded border border-[var(--border)] max-h-72 overflow-y-auto">
-            {page.content.replace(/^---[\s\S]*?---\s*/m, '').trim()}
-          </pre>
+          {/* Rendered markdown — wiki links swap the panel, sessions go full page */}
+          <div className="bg-[var(--bg)] p-3 rounded border border-[var(--border)]">
+            <MarkdownContent
+              source={stripFrontmatter(page.content)}
+              compact
+              onWikiLinkClick={onSelectSlug}
+            />
+          </div>
 
           {/* Linked sessions */}
           {page.sessions.length > 0 && (
@@ -193,8 +290,14 @@ function WikiGraphInner() {
   const { graph, loading, error, refetch: refetchGraph } = useWikiGraph();
   const { status: wikiStatus, refetch: refetchStatus } = useWikiStatus();
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [panelWidth, setPanelWidth] = useState<number>(PANEL_DEFAULT_WIDTH);
   const [rebuilding, setRebuilding] = useState(false);
   const [rebuildMsg, setRebuildMsg] = useState<string | null>(null);
+
+  // Hydrate panel width from localStorage after mount (SSR-safe).
+  useEffect(() => {
+    setPanelWidth(readStoredPanelWidth());
+  }, []);
 
   const handleRebuild = useCallback(async () => {
     setRebuilding(true);
@@ -266,12 +369,38 @@ function WikiGraphInner() {
             <h1 className="text-xl font-black text-[var(--text)]">Tu wiki filosófico</h1>
           </div>
           <div className="flex gap-2 items-center">
-            {/* Legend */}
+            {/* Legend with per-category tooltip on hover */}
             <div className="hidden sm:flex gap-3 text-xs font-semibold mr-2">
               {Object.entries(CATEGORY_COLORS).map(([cat, c]) => (
-                <span key={cat} className="flex items-center gap-1">
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.bg, border: `1.5px solid ${c.border}`, display: 'inline-block' }} />
+                <span
+                  key={cat}
+                  className="group relative flex items-center gap-1 cursor-help"
+                  tabIndex={0}
+                  aria-label={`${cat}: ${CATEGORY_LABELS[cat] ?? ''}`}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: c.bg,
+                      border: `1.5px solid ${c.border}`,
+                      display: 'inline-block',
+                    }}
+                  />
                   {cat}
+                  <span
+                    role="tooltip"
+                    className="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100
+                               transition-opacity duration-100
+                               absolute top-full right-0 mt-2 z-50
+                               w-60 text-xs font-semibold text-[var(--text)] leading-snug
+                               bg-[var(--bg-card)] border-2 border-[var(--border)] p-2 rounded
+                               shadow-[2px_2px_0_0_var(--border)]
+                               whitespace-normal text-left"
+                  >
+                    {CATEGORY_LABELS[cat] ?? ''}
+                  </span>
                 </span>
               ))}
             </div>
@@ -350,6 +479,9 @@ function WikiGraphInner() {
               onNodeClick={onNodeClick}
               nodeTypes={nodeTypes}
               fitView
+              fitViewOptions={{ padding: 0.3 }}
+              minZoom={0.1}
+              maxZoom={2.5}
               attributionPosition="bottom-right"
             >
               <Background gap={20} color="#ddd" />
@@ -363,7 +495,13 @@ function WikiGraphInner() {
             </ReactFlow>
 
             {selectedSlug && (
-              <SlidePanel slug={selectedSlug} onClose={() => setSelectedSlug(null)} />
+              <SlidePanel
+                slug={selectedSlug}
+                width={panelWidth}
+                onClose={() => setSelectedSlug(null)}
+                onSelectSlug={setSelectedSlug}
+                onWidthChange={setPanelWidth}
+              />
             )}
           </div>
         )}

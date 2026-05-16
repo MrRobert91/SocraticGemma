@@ -8,19 +8,30 @@ interface MarkdownContentProps {
   source: string;
   compact?: boolean;
   className?: string;
+  /**
+   * When provided, [[wiki-links]] render as buttons that invoke this callback
+   * with the slug instead of navigating. Used by the wiki side panel to swap
+   * which note is shown without leaving the graph.
+   */
+  onWikiLinkClick?: (slug: string) => void;
 }
 
-// Convert `[[slug]]` wiki-style references into clickable internal links
-// before handing the text to react-markdown. We do this as a pre-processing
-// step because the [[...]] syntax is not standard markdown.
+// Sentinel scheme used to mark wiki links during the pre-processing step.
+// react-markdown's `a` renderer detects it and either invokes the callback
+// (if provided) or rewrites to a real /wiki/<slug> route.
+const WIKI_SCHEME = 'wiki-internal:';
+
 function transformWikiLinks(text: string): string {
   return text.replace(/\[\[([^\[\]]+)\]\]/g, (_m, slug) => {
     const trimmed = String(slug).trim();
-    return `[${trimmed}](/wiki/${encodeURIComponent(trimmed)})`;
+    return `[${trimmed}](${WIKI_SCHEME}${trimmed})`;
   });
 }
 
-const buildComponents = (compact: boolean): Components => ({
+const buildComponents = (
+  compact: boolean,
+  onWikiLinkClick?: (slug: string) => void,
+): Components => ({
   h1: ({ children }) => (
     <h1 className={`font-black text-[var(--text)] ${compact ? 'text-base mt-3 mb-2' : 'text-2xl mt-6 mb-4'}`}>
       {children}
@@ -81,6 +92,35 @@ const buildComponents = (compact: boolean): Components => ({
     );
   },
   a: ({ href, children }) => {
+    // Wiki-internal link produced by transformWikiLinks: either invoke the
+    // callback (in-grafo navigation) or fall back to a real route Link.
+    if (typeof href === 'string' && href.startsWith(WIKI_SCHEME)) {
+      const slug = href.slice(WIKI_SCHEME.length);
+      if (onWikiLinkClick) {
+        return (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onWikiLinkClick(slug);
+            }}
+            className="text-[var(--accent-dark)] underline font-semibold hover:text-[var(--accent)] transition-colors inline cursor-pointer bg-transparent border-0 p-0"
+          >
+            {children}
+          </button>
+        );
+      }
+      return (
+        <Link
+          href={`/wiki/${encodeURIComponent(slug)}`}
+          className="text-[var(--accent-dark)] underline font-semibold hover:text-[var(--accent)] transition-colors"
+        >
+          {children}
+        </Link>
+      );
+    }
+
     const isInternal = typeof href === 'string' && href.startsWith('/');
     if (isInternal) {
       return (
@@ -116,11 +156,23 @@ const buildComponents = (compact: boolean): Components => ({
   ),
 });
 
-export function MarkdownContent({ source, compact = false, className = '' }: MarkdownContentProps) {
+export function MarkdownContent({
+  source,
+  compact = false,
+  className = '',
+  onWikiLinkClick,
+}: MarkdownContentProps) {
   const processed = transformWikiLinks(source ?? '');
   return (
     <div className={className}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={buildComponents(compact)}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        // The default urlTransform strips unknown protocols — including our
+        // wiki-internal: scheme — which would erase the href before our `a`
+        // renderer ever sees it. Allow it through verbatim.
+        urlTransform={(url) => url}
+        components={buildComponents(compact, onWikiLinkClick)}
+      >
         {processed}
       </ReactMarkdown>
     </div>
