@@ -178,10 +178,25 @@ async def sync_graph_edges(user_id: str) -> int:
         linked_slugs = set(parse_wiki_links(without_backlinks))
         out_links[page["slug"]] = linked_slugs
 
+        edges_created = 0
+        unmatched: list[str] = []
         for linked_slug in linked_slugs:
-            target_id = slug_to_id.get(linked_slug)
+            # Try exact match first; fall back to re-slugifying the ref in
+            # case the LLM re-introduced accents or capital letters.
+            target_id = slug_to_id.get(linked_slug) or slug_to_id.get(_slugify(linked_slug))
             if target_id and target_id != page_id:
                 await upsert_wiki_edge(page_id, target_id)
+                edges_created += 1
+            elif linked_slug and linked_slug != page["slug"]:
+                unmatched.append(linked_slug)
+
+        if page["slug"] == "_profile" or unmatched:
+            logger.info(
+                "[WIKI/sync]   %s: refs=%d  edges=%d  unmatched=%d%s",
+                page["slug"], len(linked_slugs), edges_created, len(unmatched),
+                f" [{', '.join(unmatched[:5])}{'…' if len(unmatched) > 5 else ''}]"
+                if unmatched else "",
+            )
 
     # Build reverse map: target_slug → list of (source_slug, source_title)
     backlinks: dict[str, list[tuple[str, str]]] = {}
@@ -948,6 +963,15 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         # ── STEP 6/6: Global profile synthesis (LLM #3) ───────────────
         logger.info("[WIKI] STEP 6/6 — global profile synthesis (LLM #3)")
         await synthesize_global_profile(user_id, language)
+
+        # ── Final edge sync ────────────────────────────────────────────
+        # Belt-and-suspenders: sync_graph_edges is also called inside
+        # synthesize_global_profile, but a final pass here guarantees
+        # _profile's outgoing edges are always current regardless of the
+        # code path taken inside synthesize_global_profile (e.g. early
+        # return in incremental-mode when profile was already up-to-date).
+        final_edges = await sync_graph_edges(user_id)
+        logger.info("[WIKI]   final edge sync: backlinks_rewritten=%d", final_edges)
 
         elapsed = time.time() - start_ts
         logger.info(
