@@ -138,7 +138,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
             <div className="rounded border-2 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {isEs
                 ? 'Todavía no tienes wiki filosófico. Completa algunas conversaciones para que el generador pueda crear estímulos personalizados.'
-                : 'You don't have a philosophical wiki yet. Complete some conversations so the generator can create personalised stimuli.'}
+                : "You don't have a philosophical wiki yet. Complete some conversations so the generator can create personalised stimuli."}
             </div>
           )}
 
