@@ -224,7 +224,7 @@ def _slugify(text: str) -> str:
     return text
 
 
-async def sync_graph_edges(user_id: str) -> int:
+async def sync_graph_edges(user_id: str, language: str = "es") -> int:
     """Parse all wiki pages and rebuild edges + backlinks blocks.
 
     Returns the number of pages whose backlinks block was rewritten.
@@ -298,7 +298,12 @@ async def sync_graph_edges(user_id: str) -> int:
             ]
             block_body = "## Backlinks\n\n" + "\n".join(lines)
         else:
-            block_body = "## Backlinks\n\n*(Ninguna otra página enlaza a esta todavía.)*"
+            no_links_text = (
+                "*(Ninguna otra página enlaza a esta todavía.)*"
+                if language == "es"
+                else "*(No other page links here yet.)*"
+            )
+            block_body = f"## Backlinks\n\n{no_links_text}"
 
         new_block = f"<!-- backlinks:start -->\n{block_body}\n<!-- backlinks:end -->"
         new_content = _BACKLINK_BLOCK_RE.sub(new_block, content)
@@ -847,10 +852,11 @@ async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
     page_id = await get_wiki_page_id(user_id, "_profile")
     if page_id is None:
         page_id = str(uuid.uuid4())
-    await upsert_wiki_page(page_id, user_id, "_profile", "Perfil filosófico global", "profile", now)
+    profile_title = "Perfil filosófico global" if language == "es" else "Global Philosophical Profile"
+    await upsert_wiki_page(page_id, user_id, "_profile", profile_title, "profile", now)
 
     # Re-sync edges so _profile's [[refs]] become real edges and its backlinks block fills.
-    await sync_graph_edges(user_id)
+    await sync_graph_edges(user_id, language)
 
     logger.info(
         "[WIKI]   global profile written: %d chars, linked to %d slugs, mode=%s",
@@ -1064,7 +1070,7 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
 
         # ── STEP 5/6: Sync edges + regenerate backlinks ───────────────
         logger.info("[WIKI] STEP 5/6 — sync edges + regenerate backlinks")
-        backlinks_rewritten = await sync_graph_edges(user_id)
+        backlinks_rewritten = await sync_graph_edges(user_id, language)
         logger.info("[WIKI]   backlinks_blocks_rewritten=%d", backlinks_rewritten)
 
         # ── STEP 6/6: Global profile synthesis (LLM #3) ───────────────
@@ -1077,7 +1083,7 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         # _profile's outgoing edges are always current regardless of the
         # code path taken inside synthesize_global_profile (e.g. early
         # return in incremental-mode when profile was already up-to-date).
-        final_edges = await sync_graph_edges(user_id)
+        final_edges = await sync_graph_edges(user_id, language)
         logger.info("[WIKI]   final edge sync: backlinks_rewritten=%d", final_edges)
 
         elapsed = time.time() - start_ts

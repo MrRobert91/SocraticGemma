@@ -54,15 +54,29 @@ async def generate_report(
     if session.stimulus.get("title"):
         stimulus_text = f"{session.stimulus['title']}: {stimulus_text}"
 
+    lang = getattr(session, "language", "es") or "es"
+    lang_name = "español" if lang == "es" else "English"
+    age_group_text = "el participante" if lang == "es" else "the participant"
+    no_turns_msg = (
+        "*(La conversación no tiene turnos suficientes para generar un informe.)*"
+        if lang == "es"
+        else "*(The conversation does not have enough turns to generate a report.)*"
+    )
+
     conversation_text = _build_conversation_text(session)
     if not conversation_text.strip():
-        yield "*(La conversación no tiene turnos suficientes para generar un informe.)*"
+        yield no_turns_msg
         return
 
-    full_prompt = f"{system_text}\n\n" + report_template.format(
+    lang_instruction = (
+        f"IMPORTANT: Write the ENTIRE report in {lang_name}. "
+        f"All section headings, body text, and the closing note must be in {lang_name}. "
+        f"Do not mix languages."
+    )
+    full_prompt = f"{system_text}\n\n{lang_instruction}\n\n" + report_template.format(
         conversation_text=conversation_text,
         stimulus=stimulus_text,
-        age_group="el participante",
+        age_group=age_group_text,
     )
 
     async for evt_type, chunk in client.generate(
