@@ -10,6 +10,96 @@ All versions below are designed for a **public YouTube video of 3 minutes or les
 
 ---
 
+## Shared Segment Phrase Bank
+
+Use this same segment structure for any video version: **Hook -> Problem -> Demo -> Why It Is Better -> Why Gemma 4 -> Technical Credibility -> Final Statement**.
+
+### Hook
+- What if the best AI for learning is not the one that gives the fastest answer, but the one that asks the better question?
+- Most AI tries to finish your thought; SocraticGemma tries to help you continue it.
+- We are surrounded by answer machines, but education still begins with a question.
+- The dangerous part of AI is not only that it can be wrong; it is that it can make us stop thinking.
+- Imagine an AI tutor that refuses to take the thinking away from the learner.
+- This project starts from a simple belief: the goal is not to replace reflection, but to strengthen it.
+- When a learner asks a hard question, SocraticGemma does not rush to solve it; it opens the inquiry.
+- Instead of turning curiosity into a summary, SocraticGemma turns it into a dialogue.
+- This is not an app for getting answers faster; it is an app for thinking more carefully.
+- The question is not whether AI can respond; the question is whether AI can help us reason.
+
+### Problem
+- Most educational AI tools are optimized for convenience, but convenience is not the same as learning.
+- If every difficult question becomes an instant answer, learners lose the practice of forming judgment.
+- Traditional chatbots often explain too much, too early, and leave the learner passive.
+- A helpful assistant can accidentally become a shortcut around the very skill education is meant to develop.
+- Students do not only need information; they need practice giving reasons, testing assumptions, and considering alternatives.
+- Critical thinking is hard to measure because it unfolds over time, across many small decisions in a conversation.
+- One-off AI chats disappear, so the learner loses the long-term record of how their ideas are changing.
+- Many tools personalize content, but fewer personalize the next question based on how someone actually thinks.
+- In philosophy and ethics, the point is often not to reach a quick conclusion, but to understand why we believe what we believe.
+- The challenge is to build AI that supports intellectual agency instead of quietly taking it over.
+
+### Demo
+- First, the user chooses a topic, language, and session length, then starts a guided Socratic dialogue.
+- The model responds with a question, not a lecture, and the conversation begins from the learner's own words.
+- As the session progresses, SocraticGemma rotates between conceptual, evidence, assumption, perspective, implication, and metacognitive questions.
+- The interface shows that the model is adapting the tone and difficulty to the user's actual responses.
+- Instead of giving a final answer, the system keeps the inquiry open and asks the learner to clarify, justify, or reconsider.
+- After the dialogue, the app generates a philosophical report that summarizes themes, tensions, beliefs, and possible next directions.
+- The report is not just a transcript; it is a structured reflection on how the learner reasoned.
+- Each completed session updates a personal wiki of topics, philosophical streams, readings, and open questions.
+- The graph view shows how ideas connect across conversations, so learning becomes cumulative instead of disposable.
+- Finally, the stimulus generator proposes new starting points from the user's past conversations and the wiki graph.
+
+### Why It Is Better
+- SocraticGemma is better because it protects the learner's ownership of the reasoning process.
+- It does not treat education as answer delivery; it treats education as guided inquiry.
+- The system is designed to ask open, grounded, non-leading questions instead of steering users toward a predetermined conclusion.
+- It adapts to the learner's language and maturity through the conversation rather than relying only on fixed labels.
+- It evaluates the quality of its own Socratic moves, including openness, age fit, advancement, and whether the question builds on the learner's input.
+- The wiki turns isolated sessions into long-term intellectual memory.
+- The graph makes growth visible: recurring themes, unresolved tensions, and new areas to explore.
+- The personalised stimulus generator closes the loop by turning memory into the next learning opportunity.
+- Unlike a normal chatbot, the value increases over time as the learner builds a record of their own thinking.
+- The result is an AI experience that feels less like outsourcing thought and more like training it.
+
+### Why Gemma 4
+- Gemma 4 powers the core dialogue engine that asks Socratic follow-up questions.
+- Gemma 4 is also used to evaluate whether each response stays open, age-appropriate, and genuinely inquiry-driven.
+- The same model family supports the philosophical report that turns a conversation into a structured reflection.
+- Gemma 4 synthesizes the personal wiki, extracting themes, tensions, readings, and philosophical streams from each session.
+- It helps transform unstructured dialogue into a knowledge graph that can be searched, linked, and reused.
+- The personalised stimulus generator uses Gemma 4 to propose new questions from the user's accumulated thinking.
+- This project uses Gemma 4 not as a single chatbot, but as a reasoning layer across dialogue, evaluation, memory, and generation.
+- Gemma 4 is a strong fit because the task requires nuance, restraint, multilingual ability, and careful instruction following.
+- The model's role is not to sound smart; it is to help the human become more precise.
+- SocraticGemma shows Gemma 4 powering a full learning loop, from first question to long-term intellectual growth.
+
+### Technical Credibility
+- The app uses a Next.js frontend and a FastAPI backend, with a real browser demo rather than a static mockup.
+- Sessions, turns, reports, users, wiki pages, and graph edges are persisted in SQLite.
+- The dialogue pipeline combines structured prompt layers, age adaptation, question-type rotation, and optional memory injection.
+- The evaluation service scores each model turn against Socratic criteria and checks for forbidden behaviours like lecturing or leading.
+- The report pipeline streams markdown back to the user and persists the final result for later review.
+- The wiki pipeline extracts structured concepts, writes markdown pages, syncs backlinks, and builds a graph view.
+- The graph is rendered in the frontend so users can inspect how their ideas connect over time.
+- The personalised stimulus endpoint reads the profile and wiki pages, asks Gemma 4 for JSON suggestions, validates the response, and returns usable prompts.
+- The system includes authenticated accounts so the long-term memory belongs to a specific user.
+- The video should briefly show the repo, backend routes, prompt files, and live UI to prove that the product is implemented end to end.
+
+### Final Statement
+- SocraticGemma is built on a simple principle: AI should not replace reflection; it should strengthen it.
+- The future of education is not an answer engine for every question, but a thinking partner for every learner.
+- If AI is going to enter learning, it should help people ask better questions, not just finish homework faster.
+- SocraticGemma turns each conversation into a step in a longer intellectual journey.
+- It helps learners see what they believe, where their reasoning is strong, and where their questions can go next.
+- This is AI for agency, curiosity, and careful thought.
+- It does not try to be the smartest voice in the room; it tries to make the human wiser.
+- Every session leaves behind more than a chat log: it leaves a map of thinking.
+- Built with Gemma 4, SocraticGemma is a practical example of AI that deepens learning instead of flattening it.
+- The goal is not faster answers; the goal is stronger minds.
+
+---
+
 ## Version 1: The Answer Machine vs The Thinking Machine
 
 **Angle:** Start with a contrast. One AI gives answers. The other teaches you to think.
