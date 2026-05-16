@@ -13,6 +13,7 @@ from ..database import get_wiki_graph, list_wiki_pages, get_wiki_page_id, get_se
 from ..dependencies import get_required_user
 from ..services.wiki_service import (
     export_wiki_zip,
+    generate_stimulus_suggestions,
     get_profile_summary,
     read_page,
     synthesize_wiki_update,
@@ -186,3 +187,20 @@ async def rebuild_wiki(current_user: RequiredUser, background_tasks: BackgroundT
 
     background_tasks.add_task(_rebuild)
     return {"status": "rebuilding", "session_count": len(all_sessions)}
+
+
+@router.post(
+    "/suggest-stimuli",
+    summary="Generate personalised stimulus suggestions from the user's wiki",
+    description=(
+        "Reads the user's philosophical profile and wiki pages to propose "
+        "3 contextually relevant dialogue stimuli with a one-sentence reason each."
+    ),
+)
+async def suggest_stimuli(current_user: RequiredUser) -> dict:
+    user_id = current_user["id"]
+    language = current_user.get("preferred_language", "es")
+    stimuli = await generate_stimulus_suggestions(user_id, language)
+    pages = await list_wiki_pages(user_id)
+    has_wiki = bool(stimuli) or any(p["slug"] == "_profile" for p in pages)
+    return {"stimuli": stimuli, "has_wiki": has_wiki}

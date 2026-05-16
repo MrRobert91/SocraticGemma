@@ -152,12 +152,6 @@ export const PRESETS: Preset[] = [
     stimulus: { type: 'question', content: '¿Qué hace que alguien sea un buen amigo?', title: '¿Qué es un amigo?' },
   },
   {
-    id: 'lying-6-8',
-    title: '¿Está mal mentir?',
-    ageGroup: '6-8',
-    stimulus: { type: 'question', content: '¿Está siempre mal decir una mentira, o hay veces que puede estar bien?', title: '¿Está mal mentir?' },
-  },
-  {
     id: 'alive-6-8',
     title: '¿Qué cosas están vivas?',
     ageGroup: '6-8',
@@ -232,12 +226,6 @@ export const PRESETS: Preset[] = [
     stimulus: { type: 'question', content: 'Algunas personas nacen con más ventajas que otras. ¿Es eso justo? ¿Quién decide lo que es justo?', title: '¿Es justo que no todos seamos iguales?' },
   },
   {
-    id: 'robots-9-12',
-    title: '¿Pueden pensar las máquinas?',
-    ageGroup: '9-12',
-    stimulus: { type: 'question', content: 'Si un robot puede resolver problemas y responder preguntas, ¿está pensando de verdad o solo simulando?', title: '¿Pueden pensar las máquinas?' },
-  },
-  {
     id: 'courage-9-12',
     title: '¿Qué es el valor?',
     ageGroup: '9-12',
@@ -262,12 +250,6 @@ export const PRESETS: Preset[] = [
     stimulus: { type: 'question', content: 'Un billete es solo papel. ¿Por qué le damos valor? ¿Qué pasaría si todos deci diéramos que no vale nada?', title: '¿Por qué vale el dinero?' },
   },
   {
-    id: 'memory-9-12',
-    title: '¿Eres la misma persona de hace cinco años?',
-    ageGroup: '9-12',
-    stimulus: { type: 'question', content: 'Si has cambiado tanto desde que eras bebé, ¿qué hace que sigas siendo tú y no otra persona?', title: '¿Eres la misma persona de hace cinco años?' },
-  },
-  {
     id: 'infinite-9-12',
     title: '¿Puede existir el infinito?',
     ageGroup: '9-12',
@@ -288,12 +270,6 @@ export const PRESETS: Preset[] = [
 
   // ─── 13-16 años ─────────────────────────────────────────────────────────────
   {
-    id: 'freedom-13-16',
-    title: '¿Somos realmente libres?',
-    ageGroup: '13-16',
-    stimulus: { type: 'question', content: '¿Hasta qué punto somos libres para tomar nuestras propias decisiones?', title: '¿Somos realmente libres?' },
-  },
-  {
     id: 'identity-13-16',
     title: '¿Qué te hace ser tú?',
     ageGroup: '13-16',
@@ -310,12 +286,6 @@ export const PRESETS: Preset[] = [
     title: '¿Es la democracia el mejor sistema?',
     ageGroup: '13-16',
     stimulus: { type: 'question', content: 'Si la mayoría vota algo injusto, ¿sigue siendo legítimo? ¿Qué límites debería tener la voluntad popular?', title: '¿Es la democracia el mejor sistema?' },
-  },
-  {
-    id: 'consciousness-13-16',
-    title: '¿Qué es la consciencia?',
-    ageGroup: '13-16',
-    stimulus: { type: 'question', content: '¿Por qué tenemos experiencias subjetivas? ¿Sería posible un ser que procese información sin sentir nada?', title: '¿Qué es la consciencia?' },
   },
   {
     id: 'climate-responsibility-13-16',
@@ -352,12 +322,6 @@ export const PRESETS: Preset[] = [
     title: '¿Existen otros universos?',
     ageGroup: '13-16',
     stimulus: { type: 'question', content: 'Algunos físicos proponen que existen infinitos universos paralelos. ¿Si no podemos observarlos ni medirlos, tiene sentido hablar de ellos como científicos?', title: '¿Existen otros universos?' },
-  },
-  {
-    id: 'meaning-13-16',
-    title: '¿Tiene sentido la vida?',
-    ageGroup: '13-16',
-    stimulus: { type: 'question', content: '¿El significado de la vida lo descubrimos o lo inventamos? ¿Puede tener sentido algo en un universo que no fue creado con ningún propósito?', title: '¿Tiene sentido la vida?' },
   },
 
   // ─── Adultos ─────────────────────────────────────────────────────────────────

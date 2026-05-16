@@ -120,6 +120,77 @@ def get_profile_summary(user_id: str) -> Optional[str]:
     return stripped[:800] if len(stripped) > 800 else stripped
 
 
+async def generate_stimulus_suggestions(user_id: str, language: str = "es") -> list[dict]:
+    """Generate up to 3 personalised stimulus suggestions from the user's wiki profile."""
+    profile_content = read_page(user_id, "_profile", "profile")
+    if not profile_content:
+        return []
+
+    # Strip YAML front-matter and backlinks block
+    profile_clean = re.sub(r"^---.*?---\s*", "", profile_content, flags=re.DOTALL).strip()
+    profile_clean = re.sub(
+        r"<!-- backlinks:start -->.*?<!-- backlinks:end -->",
+        "",
+        profile_clean,
+        flags=re.DOTALL,
+    ).strip()
+    if len(profile_clean) > 2500:
+        profile_clean = profile_clean[:2500] + "\n… [truncado]"
+
+    pages = await list_wiki_pages(user_id)
+    explored_titles = [
+        p.get("title") or p["slug"]
+        for p in pages
+        if p["slug"] != "_profile"
+    ]
+    pages_list = ", ".join(explored_titles[:30]) or "(ninguna)"
+
+    # Find nodes marked as pending exploration
+    pending: list[str] = []
+    for p in pages:
+        if p["slug"] == "_profile":
+            continue
+        content = read_page(user_id, p["slug"], p["category"])
+        if content and "Pendiente de exploración" in content:
+            pending.append(p.get("title") or p["slug"])
+    pending_nodes = ", ".join(pending[:10]) if pending else "(ninguno)"
+
+    prompt = _STIMULUS_SUGGESTIONS_PROMPT.format(
+        profile=profile_clean,
+        pages_list=pages_list,
+        pending_nodes=pending_nodes,
+        language=language,
+    )
+    logger.info(
+        "[WIKI]   suggest-stimuli prompt: %d chars, user=%s", len(prompt), user_id
+    )
+    result = await _llm_call_json(
+        prompt,
+        stage="suggest-stimuli",
+        session_id="suggest",
+        max_tokens=1024,
+        max_attempts=2,
+    )
+    if result is None:
+        return []
+
+    stimuli = result.get("stimuli", [])
+    if not isinstance(stimuli, list):
+        return []
+
+    valid_types = {"question", "scenario", "story"}
+    valid: list[dict] = []
+    for s in stimuli:
+        if isinstance(s, dict) and s.get("title") and s.get("content"):
+            valid.append({
+                "title": str(s["title"])[:120],
+                "content": str(s["content"])[:600],
+                "type": s.get("type") if s.get("type") in valid_types else "question",
+                "reason": str(s.get("reason", ""))[:250],
+            })
+    return valid[:3]
+
+
 def export_wiki_zip(user_id: str) -> bytes:
     """Return a ZIP archive (bytes) of all wiki .md files for the user."""
     base = _user_wiki_dir(user_id)
@@ -447,6 +518,42 @@ Eres un sistema de síntesis del perfil filosófico GLOBAL de un usuario. Vas a 
 ---
 
 Responde SOLO con el contenido markdown del perfil (sin frontmatter, sin JSON, sin envolver en bloques de código). Empieza directamente por la primera `##`.
+"""
+
+_STIMULUS_SUGGESTIONS_PROMPT = """\
+Eres un sistema de generación de estímulos filosóficos personalizados. Basándote en el perfil filosófico y el wiki del usuario, propón 3 estímulos originales para una nueva sesión de diálogo socrático.
+
+## Perfil filosófico del usuario
+{profile}
+
+## Temas explorados en el wiki
+{pages_list}
+
+## Nodos pendientes de exploración
+{pending_nodes}
+
+---
+
+Elige 3 estímulos que:
+- Retomen tensiones o preguntas abiertas que quedaron sin resolver en el perfil
+- Conecten con lecturas o corrientes relevantes que el usuario aún no ha explorado directamente
+- Propongan abordar una idea conocida desde un ángulo completamente diferente
+- Recuperen algún nodo pendiente de exploración si los hay
+- NO repitan el mismo tema o pregunta de conversaciones ya realizadas
+
+Responde SOLO con JSON válido, sin texto adicional:
+{{
+  "stimuli": [
+    {{
+      "title": "Título conciso (máximo 8 palabras)",
+      "content": "Pregunta o escenario filosófico concreto y provocador. 2-3 frases.",
+      "type": "question",
+      "reason": "Una frase: por qué este estímulo es relevante para este usuario específicamente."
+    }}
+  ]
+}}
+
+Escribe en el idioma del usuario: {language}.
 """
 
 
