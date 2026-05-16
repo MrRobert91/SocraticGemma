@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AgeGroup, Stimulus, CreateSessionRequest, Preset } from '@/lib/types';
-import { AgeSelector } from '@/components/setup/AgeSelector';
+import { Stimulus, CreateSessionRequest, Preset } from '@/lib/types';
 import { StimulusForm } from '@/components/setup/StimulusForm';
 import { Presets } from '@/components/setup/Presets';
 import { useSession } from '@/hooks/useSession';
@@ -22,7 +21,6 @@ export default function HomePage() {
   const { createSession, loading, error } = useSession();
   const { user, loading: authLoading, logout } = useAuth();
 
-  const [ageGroup, setAgeGroup] = useState<AgeGroup>('9-12');
   const [stimulus, setStimulus] = useState<Stimulus>({
     type: 'question',
     content: '',
@@ -54,7 +52,6 @@ export default function HomePage() {
   };
 
   const handlePresetSelect = (preset: Preset) => {
-    setAgeGroup(preset.ageGroup);
     setStimulus(preset.stimulus);
   };
 
@@ -66,7 +63,6 @@ export default function HomePage() {
     }
     try {
       const data: CreateSessionRequest = {
-        age_group: ageGroup,
         stimulus,
         rag_enabled: ragEnabled,
         thinking_mode: thinkingMode,
@@ -144,11 +140,6 @@ export default function HomePage() {
 
         {/* ─── Form ──────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Age selector */}
-          <section className="neo-card p-6 animate-fade-up">
-            <AgeSelector value={ageGroup} onChange={setAgeGroup} lang={language as LangCode} />
-          </section>
-
           {/* Stimulus form */}
           <section className="neo-card p-6 animate-fade-up">
             <h2 className="neo-label">{t.stimulusSectionHeader}</h2>
@@ -157,7 +148,7 @@ export default function HomePage() {
 
           {/* Presets */}
           <section className="neo-card p-6 animate-fade-up">
-            <Presets selectedAge={ageGroup} onSelect={handlePresetSelect} lang={language as LangCode} />
+            <Presets onSelect={handlePresetSelect} lang={language as LangCode} />
           </section>
 
           {/* Advanced options */}

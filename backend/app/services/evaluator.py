@@ -9,22 +9,22 @@ from ..models import EvalScores
 from .gemma_client import gemma_client
 
 
-EVALUATOR_PROMPT = """You are an expert evaluator of Socratic dialogue responses for children. Evaluate the following response and provide scores.
+EVALUATOR_PROMPT = """You are an expert evaluator of Socratic dialogue responses. Evaluate the following response and provide scores.
 
 SCORING CRITERIA (all scores 1-5):
 
 1. SOCRATISM (weight: 0.30): How well does the response follow Socratic method?
    - Does it ask questions instead of giving answers?
-   - Does it avoid telling the child what to think?
+   - Does it avoid telling the person what to think?
    - Does it probe deeper into ideas?
 
-2. AGE FIT (weight: 0.175): How appropriate is the language and concepts for the child's age?
-   - Vocabulary appropriate?
-   - Concepts explained at right level?
-   - Examples relevant to age group?
+2. REGISTER FIT (weight: 0.175): How well does the language and depth match the level demonstrated by this person in the conversation?
+   - Vocabulary appropriate to what they have shown?
+   - Complexity calibrated to their expressed reasoning?
+   - Examples pitched at the right level of abstraction?
 
-3. BUILDS ON (weight: 0.175): How well does it connect to the child's previous response?
-   - References child's actual words?
+3. BUILDS ON (weight: 0.175): How well does it connect to the person's previous response?
+   - References their actual words?
    - Advances the specific thread of conversation?
    - Shows listening and understanding?
 
@@ -39,22 +39,20 @@ SCORING CRITERIA (all scores 1-5):
    - Explores implications?
 
 FORBIDDEN BEHAVIORS TO DETECT:
-- overhelp: Giving answers, praising correctness, doing the thinking for the child
+- overhelp: Giving answers, praising correctness, doing the thinking for the person
 - lecture: Explaining concepts, giving information unprompted, teaching mode
-- correct: Telling the child they are wrong, fact-checking, academic correction
+- correct: Telling the person they are wrong, fact-checking, academic correction
 - leading: Guiding toward a predetermined answer, steering the conversation
 - close: Giving quick answers, closing down inquiry, not leaving room for thinking
 
-CHILD'S INPUT: {child_input}
+PERSON'S INPUT: {child_input}
 
 MODEL RESPONSE TO EVALUATE: {model_response}
-
-AGE GROUP: {age_group}
 
 Respond in this exact JSON format:
 {{
     "socratism": <score 1-5>,
-    "age_fit": <score 1-5>,
+    "register_fit": <score 1-5>,
     "builds_on": <score 1-5>,
     "openness": <score 1-5>,
     "advancement": <score 1-5>,
@@ -85,22 +83,21 @@ class Evaluator:
         self,
         child_input: str,
         model_response: str,
-        age_group: str
+        age_group: str = "adaptive",  # kept for backwards-compat, no longer used in prompt
     ) -> tuple[EvalScores, list[str]]:
-        """Evaluate a model response to a child's input.
-        
+        """Evaluate a model response.
+
         Args:
-            child_input: The child's input/question.
+            child_input: The user's input/question.
             model_response: The model's response to evaluate.
-            age_group: The child's age group ("6-8", "9-12", or "13-16").
-            
+            age_group: Deprecated — kept for callers that still pass it; ignored.
+
         Returns:
             Tuple of (EvalScores object, list of forbidden behaviors detected).
         """
         prompt = EVALUATOR_PROMPT.format(
             child_input=child_input,
             model_response=model_response,
-            age_group=age_group
         )
         
         try:
@@ -118,7 +115,7 @@ class Evaluator:
             # Extract scores and clamp to [1, 5]
             scores = EvalScores(
                 socratism=self._clamp(result.get("socratism", 3.0)),
-                age_fit=self._clamp(result.get("age_fit", 3.0)),
+                age_fit=self._clamp(result.get("register_fit", result.get("age_fit", 3.0))),
                 builds_on=self._clamp(result.get("builds_on", 3.0)),
                 openness=self._clamp(result.get("openness", 3.0)),
                 advancement=self._clamp(result.get("advancement", 3.0)),

@@ -20,7 +20,7 @@ router = APIRouter(prefix="/compare", tags=["compare"])
 class CompareRequest(BaseModel):
     """Request to compare baseline vs P4C prompts."""
     child_input: str = Field(description="The child's input to compare responses for")
-    age_group: str = Field(description="Age group: '6-8', '9-12', or '13-16'")
+    age_group: str = Field(default="adaptive", description="Communication style (default: 'adaptive')")
     model_size: str = Field(default="fast", description="Model size: 'fast' or 'accurate'")
     thinking_mode: bool = Field(default=True, description="Enable thinking mode")
 

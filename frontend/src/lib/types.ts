@@ -1,6 +1,6 @@
 // ─── Age Group ───────────────────────────────────────────────────────────────
 
-export type AgeGroup = '6-8' | '9-12' | '13-16' | 'adult';
+export type AgeGroup = '6-8' | '9-12' | '13-16' | 'adult' | 'adaptive';
 // ─── Auth ───────────────────────────────────────────────────────────────
 
 export interface User {
@@ -33,7 +33,7 @@ export interface SessionResponse {
 // ─── Session request ──────────────────────────────────────────────────────────
 
 export interface CreateSessionRequest {
-  age_group: AgeGroup;
+  age_group?: AgeGroup;
   stimulus: Stimulus;
   model_size?: 'fast' | 'accurate';
   rag_enabled?: boolean;

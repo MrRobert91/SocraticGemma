@@ -50,13 +50,6 @@ async def generate_report(
 
     system_text, report_template = _load_report_prompt()
 
-    age_label = {
-        "6-8": "niños de 6 a 8 años",
-        "9-12": "niños de 9 a 12 años",
-        "13-16": "adolescentes de 13 a 16 años",
-        "adult": "adulto",
-    }.get(session.age_group, session.age_group)
-
     stimulus_text = session.stimulus.get("content", "")
     if session.stimulus.get("title"):
         stimulus_text = f"{session.stimulus['title']}: {stimulus_text}"
@@ -69,7 +62,7 @@ async def generate_report(
     full_prompt = f"{system_text}\n\n" + report_template.format(
         conversation_text=conversation_text,
         stimulus=stimulus_text,
-        age_group=age_label,
+        age_group="el participante",
     )
 
     async for evt_type, chunk in client.generate(

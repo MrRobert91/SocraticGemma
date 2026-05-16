@@ -11,7 +11,7 @@ interface RadarChartProps {
 export function RadarChart({ scores }: RadarChartProps) {
   const labels: { key: RequiredScoreKey; label: string }[] = [
     { key: 'socratism', label: 'Socratismo' },
-    { key: 'age_fit', label: 'Ajuste edad' },
+    { key: 'age_fit', label: 'Registro' },
     { key: 'builds_on', label: 'Construye' },
     { key: 'openness', label: 'Apertura' },
     { key: 'advancement', label: 'Avance' },

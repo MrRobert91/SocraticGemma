@@ -11,12 +11,6 @@ import { MarkdownContent } from '@/components/MarkdownContent';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
 
-const AGE_LABELS: Record<string, string> = {
-  '6-8': '6–8 años',
-  '9-12': '9–12 años',
-  '13-16': '13–16 años',
-};
-
 const LANG_LABELS: Record<string, string> = {
   es: 'Español',
   en: 'English',
@@ -43,9 +37,6 @@ function ConversationCard({ conv }: { conv: ConversationSummary }) {
         <h2 className="text-sm font-bold text-[var(--text)] line-clamp-2">
           {conv.stimulus.title || conv.stimulus.content}
         </h2>
-        <span className="shrink-0 neo-tag bg-[var(--accent-bg)] text-emerald-900 dark:text-emerald-100 text-xs px-2 py-0.5">
-          {AGE_LABELS[conv.age_group] ?? conv.age_group}
-        </span>
       </div>
 
       {conv.stimulus.title && (

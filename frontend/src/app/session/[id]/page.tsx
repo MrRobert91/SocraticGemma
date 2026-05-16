@@ -130,7 +130,7 @@ export default function SessionPage() {
             <div>
               <p className="font-black text-[var(--text)] text-sm leading-tight">SocraticGemma</p>
               <p className="text-xs text-[var(--muted)]">
-                {session.age_group} años · {session.stimulus.title || 'Sesión'}
+                {session.stimulus.title || 'Sesión'}
               </p>
             </div>
           </div>

@@ -107,7 +107,7 @@ export default function EvalPage() {
           <div>
             <h1 className="font-black text-[var(--text)]">Panel de Evaluación</h1>
             <p className="text-xs font-semibold text-[var(--muted)]">
-              {session.age_group} años • {session.stimulus.title || 'Sesión'}
+              {session.stimulus.title || 'Sesión'}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function EvalPage() {
               {[
                 { label: 'Turnos', val: evalSummary.turn_count, raw: true },
                 { label: 'Socratismo', val: evalSummary.avg_scores.socratism },
-                { label: 'Ajuste edad', val: evalSummary.avg_scores.age_fit },
+                { label: 'Registro', val: evalSummary.avg_scores.age_fit },
                 { label: 'Total', val: evalSummary.avg_scores.overall },
               ].map(({ label, val, raw }) => {
                 const num = typeof val === 'number' ? val : 0;

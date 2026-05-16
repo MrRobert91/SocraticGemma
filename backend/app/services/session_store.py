@@ -156,7 +156,7 @@ class SessionStore:
 
             session = Session(
                 session_id=session_id,
-                age_group=data.get("age_group", "9-12"),
+                age_group=data.get("age_group", "adaptive"),
                 stimulus=data.get("stimulus", {}),
                 model_size=data.get("model_size", "fast"),
                 language=data.get("language", "es"),

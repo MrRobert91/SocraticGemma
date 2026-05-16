@@ -49,6 +49,7 @@ class PromptBuilder:
         prompt_files = [
             "system_base.yaml",
             "baseline.yaml",
+            "adaptive.yaml",
             "age_6_8.yaml",
             "age_9_12.yaml",
             "age_13_16.yaml",
@@ -81,8 +82,9 @@ class PromptBuilder:
             "9-12": "age_9_12",
             "13-16": "age_13_16",
             "adult": "age_adult",
+            "adaptive": "adaptive",
         }
-        return age_map.get(age_group, "age_9_12")
+        return age_map.get(age_group, "adaptive")
 
     def _select_next_question_type(
         self,
@@ -168,9 +170,9 @@ class PromptBuilder:
         layers.append(self.prompts.get("system_base", ""))
         layers.append(progress_line)
         
-        # Layer 2: Age-specific guidelines
+        # Layer 2: Communication style (adaptive or legacy age-group)
         age_key = self._get_age_prompt_key(age_group)
-        layers.append("=" * 50 + "\nLAYER 2: AGE-SPECIFIC GUIDELINES\n" + "=" * 50)
+        layers.append("=" * 50 + "\nLAYER 2: COMMUNICATION STYLE\n" + "=" * 50)
         layers.append(self.prompts.get(age_key, ""))
         
         # Layer 3: Forbidden behaviors

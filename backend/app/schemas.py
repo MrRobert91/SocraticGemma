@@ -20,7 +20,8 @@ class Stimulus(BaseModel):
 class CreateSessionRequest(BaseModel):
     """Request to create a new Socratic dialogue session."""
     age_group: str = Field(
-        description="Age group: '6-8', '9-12', '13-16', or 'adult'"
+        default="adaptive",
+        description="Communication style: 'adaptive' (default), '6-8', '9-12', '13-16', or 'adult'"
     )
     stimulus: Stimulus = Field(
         description="The stimulus to begin the dialogue with"
@@ -54,8 +55,8 @@ class CreateSessionRequest(BaseModel):
 class EvalScoresResponse(BaseModel):
     """Evaluation scores for a turn response."""
     socratism: float = Field(description="How well the response follows Socratic method (1-5)")
-    age_fit: float = Field(description="How appropriate for the child's age (1-5)")
-    builds_on: float = Field(description="How well it builds on child's previous response (1-5)")
+    age_fit: float = Field(description="How well the language/depth matches the user's demonstrated register (1-5)")
+    builds_on: float = Field(description="How well it builds on the user's previous response (1-5)")
     openness: float = Field(description="How open-ended the question is (1-5)")
     advancement: float = Field(description="How much it advances philosophical inquiry (1-5)")
     overall: float = Field(description="Overall quality score (1-5)")
