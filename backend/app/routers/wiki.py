@@ -16,6 +16,7 @@ from ..services.wiki_service import (
     generate_stimulus_suggestions,
     get_profile_summary,
     read_page,
+    sync_graph_edges,
     synthesize_wiki_update,
 )
 
@@ -184,9 +185,24 @@ async def rebuild_wiki(current_user: RequiredUser, background_tasks: BackgroundT
     async def _rebuild():
         for session_id in all_sessions:
             await synthesize_wiki_update(user_id, session_id, preferred_language)
+        # Re-sync edges after all pages are rebuilt to ensure graph is complete.
+        await sync_graph_edges(user_id, preferred_language)
 
     background_tasks.add_task(_rebuild)
     return {"status": "rebuilding", "session_count": len(all_sessions)}
+
+
+@router.post(
+    "/sync-edges",
+    status_code=status.HTTP_200_OK,
+    summary="Re-synchronise graph edges from wiki content",
+    description="Parses all wiki pages and rebuilds the edge graph without re-synthesising content.",
+)
+async def sync_edges(current_user: RequiredUser) -> dict:
+    user_id = current_user["id"]
+    language = current_user.get("preferred_language", "es")
+    rewritten = await sync_graph_edges(user_id, language)
+    return {"status": "ok", "backlinks_rewritten": rewritten}
 
 
 @router.post(

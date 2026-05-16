@@ -529,11 +529,15 @@ async def upsert_wiki_edge(source_id: str, target_id: str, relation: str = "rela
 
 
 async def delete_wiki_edges_for_page(page_id: str) -> None:
-    """Remove all edges involving a page (called before re-syncing links)."""
+    """Remove outgoing edges for a page (called before re-syncing links).
+
+    Only deletes edges where this page is the source so that edges created
+    by other pages pointing TO this page are not wiped during sync.
+    """
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "DELETE FROM wiki_edges WHERE source_id = ? OR target_id = ?",
-            (page_id, page_id),
+            "DELETE FROM wiki_edges WHERE source_id = ?",
+            (page_id,),
         )
         await db.commit()
 
@@ -554,8 +558,9 @@ async def get_wiki_graph(user_id: str) -> dict:
 
         placeholders = ",".join("?" * len(page_ids))
         async with db.execute(
-            f"SELECT source_id, target_id, relation, weight FROM wiki_edges WHERE source_id IN ({placeholders})",
-            page_ids,
+            f"SELECT source_id, target_id, relation, weight FROM wiki_edges"
+            f" WHERE source_id IN ({placeholders}) AND target_id IN ({placeholders})",
+            page_ids + page_ids,
         ) as cur:
             edge_rows = await cur.fetchall()
 
