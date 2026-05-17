@@ -350,15 +350,15 @@ function useForceSimulation(
         'link',
         forceLink<SimNode, SimLink>(simLinks)
           .id(d => d.id)
-          .distance(110)
-          .strength(0.4),
+          .distance(180)
+          .strength(0.15),
       )
       // All nodes repel each other, spreading clusters apart
-      .force('charge', forceManyBody<SimNode>().strength(-180).distanceMax(500))
+      .force('charge', forceManyBody<SimNode>().strength(-500).distanceMax(800))
       // Gentle center gravity so the graph doesn't drift off screen
-      .force('center', forceCenter<SimNode>(cx, cy).strength(0.04))
+      .force('center', forceCenter<SimNode>(cx, cy).strength(0.03))
       // Collision prevents overlap; radius proportional to visual node size
-      .force('collide', forceCollide<SimNode>(d => nodeRadius(d.wiki) + 12).strength(0.7))
+      .force('collide', forceCollide<SimNode>(d => nodeRadius(d.wiki) + 30).strength(0.9))
       .alphaDecay(0.02)
       .on('tick', () => {
         setNodes(nds =>
