@@ -29,6 +29,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} scroll-smooth`}>
+      <head>
+        {/* Inline viewport tag guarantees it lands in the first HTML bytes,
+            independent of Next.js metadata streaming order. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className="antialiased">
         <AuthProvider>
           {children}
