@@ -197,11 +197,16 @@ export default function ConversationDetailPage({
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <span className="text-3xl" aria-hidden="true">🤔</span>
-            <span className="text-xl font-black tracking-tight text-[var(--text)]">SocraticGemma</span>
+            <span className="text-xl font-black tracking-tight text-[var(--text)] hidden md:inline">SocraticGemma</span>
           </Link>
           <nav className="flex gap-2" aria-label="Navegación">
-            <Link href="/" className="neo-btn-ghost px-3 py-1.5 text-sm">Inicio</Link>
-            <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">← Conversaciones</Link>
+            <Link href="/" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label="Inicio">
+              ←<span className="hidden md:inline"> Inicio</span>
+            </Link>
+            <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm" aria-label="Volver a conversaciones">
+              <span className="md:hidden">💬</span>
+              <span className="hidden md:inline">← Conversaciones</span>
+            </Link>
           </nav>
         </div>
       </header>

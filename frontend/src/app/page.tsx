@@ -81,7 +81,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-3xl" aria-hidden="true">🤔</span>
-            <span className="text-xl font-black tracking-tight text-[var(--text)]">
+            <span className="text-xl font-black tracking-tight text-[var(--text)] hidden md:inline">
               SocraticGemma
             </span>
           </div>
@@ -100,15 +100,20 @@ export default function HomePage() {
             {!authLoading && (
               user ? (
                 <>
-                  <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">{t.navConversations}</a>
-                  <span className="hidden sm:block text-xs text-[var(--muted)] font-semibold truncate max-w-[140px]">
+                  <a href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label={t.navConversations}>
+                    <span className="md:hidden">💬</span>
+                    <span className="hidden md:inline">{t.navConversations}</span>
+                  </a>
+                  <span className="hidden lg:block text-xs text-[var(--muted)] font-semibold truncate max-w-[140px]">
                     {user.email}
                   </span>
                   <button
                     onClick={() => logout()}
                     className="neo-btn-ghost px-3 py-1.5 text-sm"
+                    aria-label={t.navLogout}
                   >
-                    {t.navLogout}
+                    <span className="md:hidden">✕</span>
+                    <span className="hidden md:inline">{t.navLogout}</span>
                   </button>
                 </>
               ) : (

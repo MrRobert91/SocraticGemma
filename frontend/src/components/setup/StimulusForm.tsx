@@ -165,7 +165,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
           )}
 
           {generating && (
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
@@ -181,7 +181,7 @@ export function StimulusForm({ stimulus, onChange, lang = 'es' }: StimulusFormPr
           )}
 
           {!generating && proposals.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {proposals.map((p, i) => (
                 <button
                   key={i}
