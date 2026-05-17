@@ -33,6 +33,9 @@ import { useWikiGraph, useWikiPage, useWikiStatus } from '@/hooks/useWiki';
 import { WikiNode } from '@/lib/types';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { Tooltip } from '@/components/Tooltip';
+import { useLang } from '@/hooks/useLang';
+import { getTranslations } from '@/lib/i18n';
+import type { UITranslations } from '@/lib/i18n';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -51,6 +54,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   reading: 'Libro o ensayo recomendado por tu perfil',
   profile: 'Tu perfil filosófico global, síntesis de todas tus sesiones',
 };
+
+// Kept as a fallback reference; actual labels come from i18n at runtime
 
 // ─── Resizable panel constants ────────────────────────────────────────────────
 
@@ -86,7 +91,7 @@ function nodeRadius(wiki: WikiNode): number {
 
 // ─── Custom node ──────────────────────────────────────────────────────────────
 
-function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } }) {
+function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean; profileLabel?: string } }) {
   const colors = CATEGORY_COLORS[data.category] ?? CATEGORY_COLORS.topic;
   const isProfile = data.category === 'profile';
   // Profile is the user's central hub: always larger, with an icon, so it
@@ -147,7 +152,7 @@ function WikiNodeComponent({ data }: { data: WikiNode & { selected: boolean } })
           }}
         >
           {isProfile
-            ? 'Perfil'
+            ? (data.profileLabel ?? 'Perfil')
             : data.title.length > 12
               ? data.title.slice(0, 11) + '…'
               : data.title}
@@ -167,9 +172,10 @@ interface SlidePanelProps {
   onClose: () => void;
   onSelectSlug: (slug: string) => void;
   onWidthChange: (w: number) => void;
+  t: UITranslations;
 }
 
-function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: SlidePanelProps) {
+function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange, t }: SlidePanelProps) {
   const { page, loading, error } = useWikiPage(slug);
 
   // Drag state lives in refs to avoid re-renders during the move.
@@ -227,13 +233,13 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
       style={{ width, boxShadow: '-4px 0 0 0 var(--border)' }}
     >
       {/* Drag handle on the LEFT edge of the panel */}
-      <Tooltip content="Arrastra para redimensionar" side="right">
+      <Tooltip content={t.panelResizeDrag} side="right">
         <div
           onMouseDown={onPointerDown}
           className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize bg-[var(--border)] hover:bg-[var(--accent)] active:bg-[var(--accent-dark)] z-30 transition-colors"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Redimensionar panel"
+          aria-label={t.panelResizeLabel}
         />
       </Tooltip>
 
@@ -244,14 +250,14 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
         <button
           onClick={onClose}
           className="neo-btn-ghost text-lg px-2 py-0.5 leading-none"
-          aria-label="Cerrar"
+          aria-label={t.panelClose}
         >
           ×
         </button>
       </div>
 
       {loading && (
-        <div className="p-4 text-sm text-[var(--muted)] animate-pulse">Cargando…</div>
+        <div className="p-4 text-sm text-[var(--muted)] animate-pulse">{t.loadingEllipsis}</div>
       )}
       {error && (
         <div className="p-4 text-sm text-rose-600">{error}</div>
@@ -263,7 +269,7 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
             <span className="neo-tag text-xs">{page.category}</span>
             {page.sessions.length > 0 && (
               <span className="neo-tag text-xs bg-[var(--accent-bg)]">
-                {page.sessions.length} sesión{page.sessions.length !== 1 ? 'es' : ''}
+                {page.sessions.length} {page.sessions.length !== 1 ? t.panelSessionPlural : t.panelSessionSingular}
               </span>
             )}
           </div>
@@ -280,7 +286,7 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
           {/* Linked sessions */}
           {page.sessions.length > 0 && (
             <div>
-              <p className="text-xs font-bold text-[var(--muted)] mb-2">CONVERSACIONES</p>
+              <p className="text-xs font-bold text-[var(--muted)] mb-2">{t.panelConversationsLabel}</p>
               <div className="flex flex-col gap-1">
                 {page.sessions.map(sid => (
                   <Link
@@ -299,7 +305,7 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
             href={`/wiki/${slug}`}
             className="neo-btn text-xs px-3 py-1.5 text-center mt-auto"
           >
-            Ver página completa →
+            {t.panelViewFullPage}
           </Link>
         </div>
       )}
@@ -408,6 +414,8 @@ function useForceSimulation(
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function WikiGraphInner() {
+  const lang = useLang();
+  const t = getTranslations(lang);
   const { graph, loading, error, refetch: refetchGraph } = useWikiGraph();
   const { status: wikiStatus, refetch: refetchStatus } = useWikiStatus();
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
@@ -432,13 +440,14 @@ function WikiGraphInner() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setRebuildMsg(
-        `Regenerando wiki a partir de ${data.session_count ?? '?'} sesión(es). ` +
-        `Esto puede tardar 1–3 minutos. Pulsa "Recargar" en un momento.`
+        lang === 'en'
+          ? `Rebuilding wiki from ${data.session_count ?? '?'} session(s). This may take 1–3 minutes. Click “Refresh” in a moment.`
+          : `Regenerando wiki a partir de ${data.session_count ?? '?'} sesión(es). Esto puede tardar 1–3 minutos. Pulsa “Recargar” en un momento.`
       );
     } catch (e) {
       setRebuildMsg(
-        'No se pudo iniciar la regeneración. ' +
-        (e instanceof Error ? e.message : 'Error desconocido')
+        (lang === 'en' ? 'Could not start rebuilding. ' : 'No se pudo iniciar la regeneración. ') +
+        (e instanceof Error ? e.message : t.unknownError)
       );
     } finally {
       setRebuilding(false);
@@ -474,7 +483,7 @@ function WikiGraphInner() {
         id: wiki.id,
         type: 'wiki',
         position: { x: 400 + (Math.random() - 0.5) * 300, y: 300 + (Math.random() - 0.5) * 300 },
-        data: { ...wiki, selected: false },
+        data: { ...wiki, selected: false, profileLabel: t.wikiProfileNodeLabel },
       })),
     );
     setEdges(
@@ -504,9 +513,9 @@ function WikiGraphInner() {
       >
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/conversations" className="neo-btn-ghost px-2 py-1 text-lg font-bold" aria-label="Volver">←</Link>
+            <Link href="/conversations" className="neo-btn-ghost px-2 py-1 text-lg font-bold" aria-label={t.navBackConversations}>←</Link>
             <span className="text-2xl" aria-hidden="true">🗺️</span>
-            <h1 className="text-xl font-black text-[var(--text)]">Tu wiki filosófico</h1>
+            <h1 className="text-xl font-black text-[var(--text)]">{t.wikiPageTitle}</h1>
           </div>
           <div className="flex gap-2 items-center">
             {/* Legend with per-category tooltip on hover (portal-based) */}
@@ -514,7 +523,7 @@ function WikiGraphInner() {
               {Object.entries(CATEGORY_COLORS).map(([cat, c]) => (
                 <Tooltip
                   key={cat}
-                  content={CATEGORY_LABELS[cat] ?? ''}
+                  content={t.wikiCategoryLabels[cat] ?? CATEGORY_LABELS[cat] ?? ''}
                   side="bottom"
                   className="flex items-center gap-1 cursor-help"
                 >
@@ -539,7 +548,10 @@ function WikiGraphInner() {
                 className="neo-btn-ghost px-3 py-1.5 text-xs"
                 title="Reconstruye las relaciones del grafo sin regenerar el contenido"
               >
-                {syncing ? '⏳ Sincronizando…' : '🔗 Sincronizar grafo'}
+                {syncing
+                  ? (lang === 'en' ? '⏳ Syncing…' : '⏳ Sincronizando…')
+                  : (lang === 'en' ? '🔗 Sync graph' : '🔗 Sincronizar grafo')
+                }
               </button>
             )}
             <a
@@ -547,7 +559,7 @@ function WikiGraphInner() {
               download="wiki.zip"
               className="neo-btn-ghost px-3 py-1.5 text-xs"
             >
-              ⬇ Exportar ZIP
+              {t.exportZip}
             </a>
           </div>
         </div>
@@ -556,7 +568,7 @@ function WikiGraphInner() {
       <main className="flex-1 relative">
         {loading && (
           <div className="flex items-center justify-center h-96 text-[var(--muted)] font-semibold">
-            Cargando grafo…
+            {t.wikiLoadingGraph}
           </div>
         )}
         {error && (
@@ -569,19 +581,20 @@ function WikiGraphInner() {
             {wikiStatus && wikiStatus.session_count === 0 ? (
               <>
                 <span className="text-5xl">📭</span>
-                <p className="font-bold text-lg">Tu wiki está vacío</p>
+                <p className="font-bold text-lg">{t.wikiEmptyGraphTitle}</p>
                 <p className="text-sm">
-                  Completa una sesión socrática y genera el informe filosófico para empezar a construir tu grafo de conocimiento.
+                  {t.wikiEmptyGraphDesc}
                 </p>
               </>
             ) : (
               <>
                 <span className="text-5xl">⏳</span>
-                <p className="font-bold text-lg">Tu wiki aún no se ha generado</p>
+                <p className="font-bold text-lg">{t.wikiNotGeneratedTitle}</p>
                 <p className="text-sm">
-                  Tienes {wikiStatus?.session_count ?? '?'} sesión(es) guardada(s) pero ninguna página en el wiki todavía.
-                  {' '}La síntesis se ejecuta automáticamente al generar el informe filosófico de una sesión y puede tardar 1–3 minutos.
-                  {' '}Si has esperado y sigue vacío, prueba a regenerarlo manualmente.
+                  {lang === 'en'
+                    ? `You have ${wikiStatus?.session_count ?? '?'} saved session(s) but no wiki pages yet. The synthesis runs automatically when you generate a session’s philosophical report and may take 1–3 minutes. If you’ve waited and it’s still empty, try rebuilding it manually.`
+                    : `Tienes ${wikiStatus?.session_count ?? '?'} sesión(es) guardada(s) pero ninguna página en el wiki todavía. La síntesis se ejecuta automáticamente al generar el informe filosófico de una sesión y puede tardar 1–3 minutos. Si has esperado y sigue vacío, prueba a regenerarlo manualmente.`
+                  }
                 </p>
                 {rebuildMsg && (
                   <div className="neo-card p-3 text-xs text-[var(--text)] bg-amber-50 border-amber-300">
@@ -593,14 +606,14 @@ function WikiGraphInner() {
                     onClick={handleRefresh}
                     className="neo-btn-ghost px-4 py-2 text-sm"
                   >
-                    🔄 Recargar
+                    {t.refreshButton}
                   </button>
                   <button
                     onClick={handleRebuild}
                     disabled={rebuilding}
                     className="neo-btn px-4 py-2 text-sm"
                   >
-                    {rebuilding ? 'Solicitando…' : '🛠 Regenerar wiki'}
+                    {rebuilding ? t.rebuildingButton : t.rebuildButton}
                   </button>
                 </div>
               </>
@@ -642,6 +655,7 @@ function WikiGraphInner() {
                 onClose={() => setSelectedSlug(null)}
                 onSelectSlug={setSelectedSlug}
                 onWidthChange={setPanelWidth}
+                t={t}
               />
             )}
           </div>

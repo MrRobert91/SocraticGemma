@@ -76,6 +76,22 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   statement: 'Afirmación',
 };
 
+export const QUESTION_TYPE_LABELS_EN: Record<QuestionType, string> = {
+  conceptual: 'Conceptual',
+  assumption: 'Assumption',
+  evidence: 'Evidence',
+  perspective: 'Perspective',
+  implication: 'Implication',
+  metacognitive: 'Metacognitive',
+  opening: 'Opening',
+  statement: 'Statement',
+};
+
+export function getQuestionTypeLabel(type: string, lang: string): string {
+  const labels = lang === 'en' ? QUESTION_TYPE_LABELS_EN : QUESTION_TYPE_LABELS;
+  return labels[type as QuestionType] ?? type;
+}
+
 export const QUESTION_TYPE_COLORS: Record<QuestionType, string> = {
   conceptual: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
   assumption: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',

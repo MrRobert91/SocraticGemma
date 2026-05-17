@@ -56,6 +56,80 @@ export interface UITranslations {
   errorStimulusRequired: string;
   // Footer
   footer: string;
+  // Nav (extra pages)
+  navHome: string;
+  navWiki: string;
+  navBackConversations: string;
+  // Turn counter
+  turnSingular: string;
+  turnPlural: string;
+  // Generic UI
+  retryButton: string;
+  unknownError: string;
+  loadingEllipsis: string;
+  // Conversations page — wiki / profile panel
+  wikiEmptyTitle: string;
+  wikiEmptyDesc: string;
+  wikiViewGraph: string;
+  profileGlobalTitle: string;
+  profileViewWiki: string;
+  profileReadFull: string;
+  profileShowLess: string;
+  // Conversations page — list
+  savedConversationsTitle: string;
+  conversationsTotalSingular: string;
+  conversationsTotalPlural: string;
+  paginationPrev: string;
+  paginationNext: string;
+  errorLoadConversations: string;
+  emptyConversationsTitle: string;
+  emptyConversationsDesc: string;
+  // Wiki page
+  wikiPageTitle: string;
+  exportZip: string;
+  wikiLoadingGraph: string;
+  wikiEmptyGraphTitle: string;
+  wikiEmptyGraphDesc: string;
+  wikiNotGeneratedTitle: string;
+  refreshButton: string;
+  rebuildButton: string;
+  rebuildingButton: string;
+  // Wiki panel
+  panelClose: string;
+  panelResizeDrag: string;
+  panelResizeLabel: string;
+  panelConversationsLabel: string;
+  panelSessionSingular: string;
+  panelSessionPlural: string;
+  panelViewFullPage: string;
+  wikiProfileNodeLabel: string;
+  wikiCategoryLabels: Record<string, string>;
+  // Session page
+  loadingSession: string;
+  sessionNotFound: string;
+  backToHome: string;
+  sessionFallbackTitle: string;
+  profileButton: string;
+  initialQuestionLabel: string;
+  viewPhilosophicalProfile: string;
+  continueMoreTurns: string;
+  inputPlaceholder: string;
+  sendButton: string;
+  inputHint: string;
+  // Conversation detail page
+  readMode: string;
+  userLabel: string;
+  deleteButton: string;
+  deletingButton: string;
+  emptyConversation: string;
+  continueConversation: string;
+  continueTurnsHint: string;
+  preparingButton: string;
+  continueConversationDesc: string;
+  philosophicalProfileTitle: string;
+  confirmDeleteConversation: string;
+  errorLoadConversation: string;
+  deleteErrorAlert: string;
 }
 
 // ─── UI Translations ──────────────────────────────────────────────────────────
@@ -117,6 +191,76 @@ const T: Record<LangCode, UITranslations> = {
     errorStimulusRequired: 'Por favor, introduce un estímulo o pregunta',
     footer:
       'SocraticGemma usa Google Gemma para adaptarse al lenguaje del usuario y construir un mapa vivo de su pensamiento.',
+    navHome: 'Inicio',
+    navWiki: '🗺 Wiki',
+    navBackConversations: '← Conversaciones',
+    turnSingular: 'turno',
+    turnPlural: 'turnos',
+    retryButton: 'Reintentar',
+    unknownError: 'Error desconocido',
+    loadingEllipsis: 'Cargando…',
+    wikiEmptyTitle: 'Wiki filosófico personal',
+    wikiEmptyDesc: 'Se construirá automáticamente al terminar conversaciones y generar informes.',
+    wikiViewGraph: 'Ver grafo →',
+    profileGlobalTitle: 'Tu perfil filosófico global',
+    profileViewWiki: 'Ver wiki completa →',
+    profileReadFull: '▼ Leer perfil completo',
+    profileShowLess: '▲ Mostrar menos',
+    savedConversationsTitle: 'Conversaciones guardadas',
+    conversationsTotalSingular: 'conversación en total',
+    conversationsTotalPlural: 'conversaciones en total',
+    paginationPrev: '← Anterior',
+    paginationNext: 'Siguiente →',
+    errorLoadConversations: 'No se pudieron cargar las conversaciones',
+    emptyConversationsTitle: 'No hay conversaciones guardadas aún',
+    emptyConversationsDesc: 'Inicia una nueva sesión para que aparezca aquí.',
+    wikiPageTitle: 'Tu wiki filosófico',
+    exportZip: '⬇ Exportar ZIP',
+    wikiLoadingGraph: 'Cargando grafo…',
+    wikiEmptyGraphTitle: 'Tu wiki está vacío',
+    wikiEmptyGraphDesc: 'Completa una sesión socrática y genera el informe filosófico para empezar a construir tu grafo de conocimiento.',
+    wikiNotGeneratedTitle: 'Tu wiki aún no se ha generado',
+    refreshButton: '🔄 Recargar',
+    rebuildButton: '🛠 Regenerar wiki',
+    rebuildingButton: 'Solicitando…',
+    panelClose: 'Cerrar',
+    panelResizeDrag: 'Arrastra para redimensionar',
+    panelResizeLabel: 'Redimensionar panel',
+    panelConversationsLabel: 'CONVERSACIONES',
+    panelSessionSingular: 'sesión',
+    panelSessionPlural: 'sesiones',
+    panelViewFullPage: 'Ver página completa →',
+    wikiProfileNodeLabel: 'Perfil',
+    wikiCategoryLabels: {
+      topic: 'Tema filosófico que has explorado en tus conversaciones',
+      stream: 'Corriente filosófica (utilitarismo, estoicismo…) relacionada con tus ideas',
+      reading: 'Libro o ensayo recomendado por tu perfil',
+      profile: 'Tu perfil filosófico global, síntesis de todas tus sesiones',
+    },
+    loadingSession: 'Cargando sesión...',
+    sessionNotFound: 'Sesión no encontrada',
+    backToHome: 'Volver al inicio',
+    sessionFallbackTitle: 'Sesión',
+    profileButton: '🗺️ Perfil',
+    initialQuestionLabel: '💬 Pregunta inicial',
+    viewPhilosophicalProfile: '🗺️ Ver perfil filosófico',
+    continueMoreTurns: '➕ Continuar 5 turnos más',
+    inputPlaceholder: 'Escribe tu respuesta...',
+    sendButton: 'Enviar',
+    inputHint: 'Enter para enviar · Shift+Enter para nueva línea',
+    readMode: 'Modo lectura',
+    userLabel: 'Usuario',
+    deleteButton: 'Eliminar',
+    deletingButton: 'Eliminando...',
+    emptyConversation: 'Esta conversación no tiene turnos guardados.',
+    continueConversation: 'Continuar esta conversación',
+    continueTurnsHint: '(+5 turnos)',
+    preparingButton: 'Preparando...',
+    continueConversationDesc: 'Retoma el diálogo donde lo dejaste. Al terminar se actualizarán el informe, la wiki y tu perfil filosófico global.',
+    philosophicalProfileTitle: 'Perfil Filosófico',
+    confirmDeleteConversation: '¿Eliminar esta conversación? Esta acción no se puede deshacer.',
+    errorLoadConversation: 'No se pudo cargar la conversación',
+    deleteErrorAlert: 'No se pudo eliminar la conversación. Inténtalo de nuevo.',
   },
 
   en: {
@@ -174,6 +318,76 @@ const T: Record<LangCode, UITranslations> = {
     errorStimulusRequired: 'Please enter a stimulus or question',
     footer:
       'SocraticGemma uses Google Gemma to adapt to the learner language and build a living map of their thinking.',
+    navHome: 'Home',
+    navWiki: '🗺 Wiki',
+    navBackConversations: '← Conversations',
+    turnSingular: 'turn',
+    turnPlural: 'turns',
+    retryButton: 'Retry',
+    unknownError: 'Unknown error',
+    loadingEllipsis: 'Loading…',
+    wikiEmptyTitle: 'Personal philosophy wiki',
+    wikiEmptyDesc: 'It will be built automatically when you finish conversations and generate reports.',
+    wikiViewGraph: 'View graph →',
+    profileGlobalTitle: 'Your global philosophical profile',
+    profileViewWiki: 'View full wiki →',
+    profileReadFull: '▼ Read full profile',
+    profileShowLess: '▲ Show less',
+    savedConversationsTitle: 'Saved conversations',
+    conversationsTotalSingular: 'conversation in total',
+    conversationsTotalPlural: 'conversations in total',
+    paginationPrev: '← Previous',
+    paginationNext: 'Next →',
+    errorLoadConversations: 'Could not load conversations',
+    emptyConversationsTitle: 'No saved conversations yet',
+    emptyConversationsDesc: 'Start a new session and it will appear here.',
+    wikiPageTitle: 'Your philosophy wiki',
+    exportZip: '⬇ Export ZIP',
+    wikiLoadingGraph: 'Loading graph…',
+    wikiEmptyGraphTitle: 'Your wiki is empty',
+    wikiEmptyGraphDesc: 'Complete a Socratic session and generate the philosophical report to start building your knowledge graph.',
+    wikiNotGeneratedTitle: 'Your wiki has not been generated yet',
+    refreshButton: '🔄 Refresh',
+    rebuildButton: '🛠 Rebuild wiki',
+    rebuildingButton: 'Requesting…',
+    panelClose: 'Close',
+    panelResizeDrag: 'Drag to resize',
+    panelResizeLabel: 'Resize panel',
+    panelConversationsLabel: 'CONVERSATIONS',
+    panelSessionSingular: 'session',
+    panelSessionPlural: 'sessions',
+    panelViewFullPage: 'View full page →',
+    wikiProfileNodeLabel: 'Profile',
+    wikiCategoryLabels: {
+      topic: 'Philosophical topic you have explored in your conversations',
+      stream: 'Philosophical stream (utilitarianism, stoicism…) related to your ideas',
+      reading: 'Book or essay recommended by your profile',
+      profile: 'Your global philosophical profile, synthesis of all your sessions',
+    },
+    loadingSession: 'Loading session...',
+    sessionNotFound: 'Session not found',
+    backToHome: 'Back to home',
+    sessionFallbackTitle: 'Session',
+    profileButton: '🗺️ Profile',
+    initialQuestionLabel: '💬 Initial question',
+    viewPhilosophicalProfile: '🗺️ View philosophical profile',
+    continueMoreTurns: '➕ Continue 5 more turns',
+    inputPlaceholder: 'Write your answer...',
+    sendButton: 'Send',
+    inputHint: 'Enter to send · Shift+Enter for new line',
+    readMode: 'Read mode',
+    userLabel: 'User',
+    deleteButton: 'Delete',
+    deletingButton: 'Deleting...',
+    emptyConversation: 'This conversation has no saved turns.',
+    continueConversation: 'Continue this conversation',
+    continueTurnsHint: '(+5 turns)',
+    preparingButton: 'Preparing...',
+    continueConversationDesc: 'Pick up the dialogue where you left off. The report, wiki, and your global philosophical profile will be updated when you finish.',
+    philosophicalProfileTitle: 'Philosophical Profile',
+    confirmDeleteConversation: 'Delete this conversation? This action cannot be undone.',
+    errorLoadConversation: 'Could not load the conversation',
+    deleteErrorAlert: 'Could not delete the conversation. Please try again.',
   },
 };
 

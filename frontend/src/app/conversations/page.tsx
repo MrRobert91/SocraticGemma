@@ -7,6 +7,9 @@ import { ConversationSummary, type ConversationsPage } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useWikiProfile } from '@/hooks/useWiki';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { useLang } from '@/hooks/useLang';
+import { getTranslations } from '@/lib/i18n';
+import type { LangCode, UITranslations } from '@/lib/i18n';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 const PER_PAGE = 24;
@@ -17,8 +20,9 @@ const LANG_LABELS: Record<string, string> = {
   ca: 'Català',
 };
 
-function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString('es-ES', {
+function formatDate(ts: number, lang: LangCode): string {
+  const locale = lang === 'en' ? 'en-GB' : 'es-ES';
+  return new Date(ts * 1000).toLocaleDateString(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -27,7 +31,7 @@ function formatDate(ts: number): string {
   });
 }
 
-function ConversationCard({ conv }: { conv: ConversationSummary }) {
+function ConversationCard({ conv, t, lang }: { conv: ConversationSummary; t: UITranslations; lang: LangCode }) {
   return (
     <Link
       href={`/conversations/${conv.id}`}
@@ -47,11 +51,11 @@ function ConversationCard({ conv }: { conv: ConversationSummary }) {
 
       <div className="flex items-center justify-between text-xs text-[var(--muted)]">
         <div className="flex items-center gap-3">
-          <span>💬 {conv.turn_count} {conv.turn_count === 1 ? 'turno' : 'turnos'}</span>
+          <span>💬 {conv.turn_count} {conv.turn_count === 1 ? t.turnSingular : t.turnPlural}</span>
           <span className="capitalize">{LANG_LABELS[conv.language] ?? conv.language}</span>
         </div>
         <time dateTime={new Date(conv.created_at * 1000).toISOString()}>
-          {formatDate(conv.created_at)}
+          {formatDate(conv.created_at, lang)}
         </time>
       </div>
     </Link>
@@ -64,12 +68,14 @@ function Pagination({
   total,
   perPage,
   onChange,
+  t,
 }: {
   page: number;
   pages: number;
   total: number;
   perPage: number;
   onChange: (p: number) => void;
+  t: UITranslations;
 }) {
   if (pages <= 1) return null;
 
@@ -79,7 +85,7 @@ function Pagination({
   return (
     <div className="flex items-center justify-between mt-8">
       <p className="text-sm font-semibold text-[var(--muted)]">
-        {from}–{to} de {total} conversaciones
+        {from}–{to} de {total} {total === 1 ? t.conversationsTotalSingular : t.conversationsTotalPlural}
       </p>
       <div className="flex gap-2">
         <button
@@ -87,7 +93,7 @@ function Pagination({
           onClick={() => onChange(page - 1)}
           className="neo-btn-ghost px-3 py-1.5 text-sm disabled:opacity-40"
         >
-          ← Anterior
+          {t.paginationPrev}
         </button>
 
         {/* Page numbers — show at most 7 around current */}
@@ -128,7 +134,7 @@ function Pagination({
           onClick={() => onChange(page + 1)}
           className="neo-btn-ghost px-3 py-1.5 text-sm disabled:opacity-40"
         >
-          Siguiente →
+          {t.paginationNext}
         </button>
       </div>
     </div>
@@ -142,6 +148,8 @@ function stripFrontmatter(md: string): string {
 export default function ConversationsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const lang = useLang();
+  const t = getTranslations(lang);
   const [data, setData] = useState<ConversationsPage | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -170,7 +178,7 @@ export default function ConversationsPage() {
       setPage(p);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setError(err instanceof Error ? err.message : t.unknownError);
     } finally {
       setLoading(false);
     }
@@ -195,15 +203,15 @@ export default function ConversationsPage() {
             <span className="text-xl font-black tracking-tight text-[var(--text)] hidden md:inline">SocraticGemma</span>
           </Link>
           <nav className="flex gap-2" aria-label="Navegación principal">
-            <Link href="/" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label="Inicio">
-              ←<span className="hidden md:inline"> Inicio</span>
+            <Link href="/" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label={t.navHome}>
+              ←<span className="hidden md:inline"> {t.navHome}</span>
             </Link>
-            <Link href="/wiki" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label="Wiki filosófico">
+            <Link href="/wiki" className="neo-btn-ghost px-3 py-1.5 text-sm" aria-label={t.navWiki}>
               🗺<span className="hidden md:inline"> Wiki</span>
             </Link>
             <Link href="/conversations" className="neo-btn px-3 py-1.5 text-sm">
               <span className="md:hidden">💬</span>
-              <span className="hidden md:inline">Conversaciones</span>
+              <span className="hidden md:inline">{t.navConversations}</span>
             </Link>
           </nav>
         </div>
@@ -216,9 +224,9 @@ export default function ConversationsPage() {
             <div className="flex items-center gap-3">
               <span className="text-2xl" aria-hidden="true">🗺️</span>
               <div>
-                <p className="text-sm font-black text-[var(--text)]">Wiki filosófico personal</p>
+                <p className="text-sm font-black text-[var(--text)]">{t.wikiEmptyTitle}</p>
                 <p className="text-xs text-[var(--muted)] mt-0.5">
-                  Se construirá automáticamente al terminar conversaciones y generar informes.
+                  {t.wikiEmptyDesc}
                 </p>
               </div>
             </div>
@@ -231,10 +239,10 @@ export default function ConversationsPage() {
             <div className="flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-2xl" aria-hidden="true">🧠</span>
-                <h3 className="text-base font-black text-[var(--text)]">Tu perfil filosófico global</h3>
+                <h3 className="text-base font-black text-[var(--text)]">{t.profileGlobalTitle}</h3>
               </div>
               <Link href="/wiki" className="neo-btn px-3 py-1.5 text-xs font-bold">
-                Ver wiki completa →
+                {t.profileViewWiki}
               </Link>
             </div>
 
@@ -257,18 +265,18 @@ export default function ConversationsPage() {
               className="neo-btn-ghost mt-3 px-3 py-1.5 text-xs font-bold"
               aria-expanded={profileExpanded}
             >
-              {profileExpanded ? '▲ Mostrar menos' : '▼ Leer perfil completo'}
+              {profileExpanded ? t.profileShowLess : t.profileReadFull}
             </button>
           </div>
         )}
 
         <div className="mb-8">
           <h2 className="text-2xl font-black text-[var(--text)]">
-            Conversaciones guardadas
+            {t.savedConversationsTitle}
           </h2>
           {data && (
             <p className="text-sm text-[var(--muted)] mt-1 font-semibold">
-              {data.total} {data.total === 1 ? 'conversación' : 'conversaciones'} en total
+              {data.total} {data.total === 1 ? t.conversationsTotalSingular : t.conversationsTotalPlural}
             </p>
           )}
         </div>
@@ -287,10 +295,10 @@ export default function ConversationsPage() {
 
         {error && (
           <div className="neo-card bg-rose-100 p-6 text-center text-rose-800">
-            <p className="font-bold">No se pudieron cargar las conversaciones</p>
+            <p className="font-bold">{t.errorLoadConversations}</p>
             <p className="text-sm mt-1">{error}</p>
             <button onClick={() => fetchPage(page)} className="neo-btn mt-3 px-4 py-2 text-sm">
-              Reintentar
+              {t.retryButton}
             </button>
           </div>
         )}
@@ -298,14 +306,8 @@ export default function ConversationsPage() {
         {!loading && !error && data && data.items.length === 0 && (
           <div className="text-center py-20 text-gray-500 dark:text-gray-400">
             <p className="text-5xl mb-4">🗂️</p>
-            <p className="text-lg font-medium">No hay conversaciones guardadas aún</p>
-            <p className="text-sm mt-2">
-              Inicia una{' '}
-              <Link href="/" className="text-amber-600 dark:text-amber-400 underline">
-                nueva sesión
-              </Link>{' '}
-              para que aparezca aquí.
-            </p>
+            <p className="text-lg font-medium">{t.emptyConversationsTitle}</p>
+            <p className="text-sm mt-2">{t.emptyConversationsDesc}</p>
           </div>
         )}
 
@@ -313,7 +315,7 @@ export default function ConversationsPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {data.items.map((conv) => (
-                <ConversationCard key={conv.id} conv={conv} />
+                <ConversationCard key={conv.id} conv={conv} t={t} lang={lang} />
               ))}
             </div>
 
@@ -323,6 +325,7 @@ export default function ConversationsPage() {
               total={data.total}
               perPage={data.per_page}
               onChange={fetchPage}
+              t={t}
             />
           </>
         )}

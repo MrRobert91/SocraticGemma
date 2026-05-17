@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
+import { ConversationDetail, ConversationTurn, QuestionType, QUESTION_TYPE_LABELS, getQuestionTypeLabel } from '@/lib/types';
 import { useSession } from '@/hooks/useSession';
+import { useLang } from '@/hooks/useLang';
+import { getTranslations } from '@/lib/i18n';
+import type { LangCode, UITranslations } from '@/lib/i18n';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
@@ -33,8 +36,9 @@ function renderMarkdown(text: string): string {
     .replace(/^\s*$/gm, '');
 }
 
-function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString('es-ES', {
+function formatDate(ts: number, lang: LangCode): string {
+  const locale = lang === 'en' ? 'en-GB' : 'es-ES';
+  return new Date(ts * 1000).toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -44,14 +48,14 @@ function formatDate(ts: number): string {
   });
 }
 
-function TurnBlock({ turn }: { turn: ConversationTurn }) {
+function TurnBlock({ turn, t, lang }: { turn: ConversationTurn; t: UITranslations; lang: LangCode }) {
   return (
     <div className="space-y-3 animate-fade-up">
       {turn.child_input && (
         <div className="flex justify-end">
           <div className="max-w-[80%] flex flex-col items-end gap-1.5">
             <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 px-1">
-              Usuario
+              {t.userLabel}
             </span>
             <div className="neo-card bg-[var(--accent-bg)] px-4 py-3">
               <p className="whitespace-pre-wrap leading-relaxed text-[var(--text)]">{turn.child_input}</p>
@@ -76,7 +80,7 @@ function TurnBlock({ turn }: { turn: ConversationTurn }) {
                   NEO_QTAG[turn.question_type as QuestionType] ?? 'bg-gray-200 text-gray-900'
                 }`}
               >
-                {QUESTION_TYPE_LABELS[turn.question_type as QuestionType] ?? turn.question_type}
+                {getQuestionTypeLabel(turn.question_type, lang)}
               </span>
             </div>
           )}
@@ -93,7 +97,10 @@ export default function ConversationDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const uiLang = useLang();
   const [conv, setConv] = useState<ConversationDetail | null>(null);
+  const lang = (conv?.language as LangCode) ?? uiLang;
+  const t = getTranslations(lang);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportContent, setReportContent] = useState<string | null>(null);
@@ -110,13 +117,13 @@ export default function ConversationDetailPage({
       await resumeSession(id);
       router.push(`/session/${id}`);
     } catch (e) {
-      setResumeError(e instanceof Error ? e.message : 'Error desconocido');
+      setResumeError(e instanceof Error ? e.message : t.unknownError);
       setResuming(false);
     }
-  }, [id, resumeSession, router]);
+  }, [id, resumeSession, router, t]);
 
   const handleDelete = useCallback(async () => {
-    if (!confirm('¿Eliminar esta conversación? Esta acción no se puede deshacer.')) return;
+    if (!confirm(t.confirmDeleteConversation)) return;
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -124,10 +131,10 @@ export default function ConversationDetailPage({
       router.push('/conversations');
     } catch (e) {
       console.error('Delete failed', e);
-      alert('No se pudo eliminar la conversación. Inténtalo de nuevo.');
+      alert(t.deleteErrorAlert);
       setDeleting(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   const handleDownloadPdf = useCallback(() => {
     if (!reportContent) return;
@@ -135,13 +142,17 @@ export default function ConversationDetailPage({
     const now = new Date();
     const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
     const rawTitle = conv?.stimulus?.title || conv?.stimulus?.content?.slice(0, 60) || '';
-    const docTitle = rawTitle ? `${rawTitle} - ${stamp}` : `Perfil Filosófico - ${stamp}`;
+    const docTitle = rawTitle ? `${rawTitle} - ${stamp}` : `${t.philosophicalProfileTitle} - ${stamp}`;
     const w = window.open('', '_blank', 'width=900,height=700');
     if (!w) {
-      alert('Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.');
+      alert(lang === 'en'
+        ? 'Your browser blocked the pop-up. Please allow pop-ups for this site and try again.'
+        : 'Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.'
+      );
       return;
     }
-    w.document.write(`<!DOCTYPE html><html lang="es">
+    const htmlLang = lang === 'en' ? 'en' : 'es';
+    w.document.write(`<!DOCTYPE html><html lang="${htmlLang}">
 <head>
   <meta charset="utf-8">
   <title>${docTitle}</title>
@@ -180,7 +191,7 @@ export default function ConversationDetailPage({
           setReportContent(rd.content ?? null);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido');
+        setError(err instanceof Error ? err.message : t.unknownError);
       } finally {
         setLoading(false);
       }
@@ -226,7 +237,7 @@ export default function ConversationDetailPage({
 
         {error && (
           <div className="neo-card bg-rose-100 p-6 text-center text-rose-800">
-            <p className="font-bold">No se pudo cargar la conversación</p>
+            <p className="font-bold">{t.errorLoadConversation}</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
         )}
@@ -247,16 +258,16 @@ export default function ConversationDetailPage({
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-4 text-xs font-semibold text-[var(--muted)]">
-                  <span>{formatDate(conv.created_at)}</span>
-                  <span>{conv.turns.length} {conv.turns.length === 1 ? 'turno' : 'turnos'}</span>
-                  <span>Modo lectura</span>
+                  <span>{formatDate(conv.created_at, lang)}</span>
+                  <span>{conv.turns.length} {conv.turns.length === 1 ? t.turnSingular : t.turnPlural}</span>
+                  <span>{t.readMode}</span>
                 </div>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="neo-btn-danger shrink-0 px-3 py-1.5 text-xs"
                 >
-                  {deleting ? 'Eliminando...' : 'Eliminar'}
+                  {deleting ? t.deletingButton : t.deleteButton}
                 </button>
               </div>
             </div>
@@ -264,11 +275,11 @@ export default function ConversationDetailPage({
             <div className="space-y-8">
               {conv.turns.length === 0 ? (
                 <p className="text-center text-[var(--muted)] py-12">
-                  Esta conversación no tiene turnos guardados.
+                  {t.emptyConversation}
                 </p>
               ) : (
                 conv.turns.map((turn) => (
-                  <TurnBlock key={turn.id} turn={turn} />
+                  <TurnBlock key={turn.id} turn={turn} t={t} lang={lang} />
                 ))
               )}
             </div>
@@ -280,16 +291,16 @@ export default function ConversationDetailPage({
                 className="neo-btn px-8 py-5 text-lg font-black flex items-center gap-3 disabled:opacity-60 disabled:cursor-wait"
               >
                 {resuming ? (
-                  <>Preparando...</>
+                  <>{t.preparingButton}</>
                 ) : (
                   <>
-                    Continuar esta conversación
-                    <span className="text-sm font-bold opacity-80">(+5 turnos)</span>
+                    {t.continueConversation}
+                    <span className="text-sm font-bold opacity-80">{t.continueTurnsHint}</span>
                   </>
                 )}
               </button>
               <p className="text-xs text-[var(--muted)] text-center max-w-md">
-                Retoma el diálogo donde lo dejaste. Al terminar se actualizarán el informe, la wiki y tu perfil filosófico global.
+                {t.continueConversationDesc}
               </p>
               {resumeError && (
                 <p className="text-xs text-rose-600 font-semibold">{resumeError}</p>
@@ -300,13 +311,13 @@ export default function ConversationDetailPage({
               <div className="mt-10">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-black text-[var(--text)] flex items-center gap-2">
-                    Perfil Filosófico
+                    {t.philosophicalProfileTitle}
                   </h3>
                   <button
                     onClick={handleDownloadPdf}
                     className="neo-btn px-4 py-2 text-sm"
                   >
-                    Imprimir / PDF
+                    {lang === 'en' ? 'Print / PDF' : 'Imprimir / PDF'}
                   </button>
                 </div>
                 <div ref={reportRef} className="neo-card p-6">
@@ -320,7 +331,7 @@ export default function ConversationDetailPage({
 
             <div className="mt-10 pt-6 border-t-2 border-[var(--border)] flex justify-between items-center text-sm font-semibold text-[var(--muted)]">
               <Link href="/conversations" className="neo-btn-ghost px-3 py-1.5 text-sm">
-                Volver a la lista
+                {t.navBackConversations}
               </Link>
               <span>ID: {conv.id}</span>
             </div>

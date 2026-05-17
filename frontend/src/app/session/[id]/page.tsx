@@ -6,6 +6,9 @@ import { SessionResponse, Turn } from '@/lib/types';
 import { useSession } from '@/hooks/useSession';
 import { useDialogueStream } from '@/hooks/useDialogueStream';
 import { ChatWindow } from '@/components/dialogue/ChatWindow';
+import { useLang } from '@/hooks/useLang';
+import { getTranslations } from '@/lib/i18n';
+import type { LangCode } from '@/lib/i18n';
 
 export default function SessionPage() {
   const params = useParams();
@@ -15,7 +18,10 @@ export default function SessionPage() {
   const { getSession, loading: sessionLoading } = useSession();
   const { sendMessage, tokens, currentTurn, status, error, reset } = useDialogueStream();
 
+  const uiLang = useLang();
   const [session, setSession] = useState<SessionResponse | null>(null);
+  const lang = (session?.language as LangCode) ?? uiLang;
+  const t = getTranslations(lang);
   const [assistantTurnCount, setAssistantTurnCount] = useState(0);
   const [extraTurns, setExtraTurns] = useState(0);
   const [inputText, setInputText] = useState('');
@@ -91,7 +97,7 @@ export default function SessionPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
         <div className="neo-card p-8 text-center animate-scale-in">
           <div className="animate-spin h-10 w-10 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full mx-auto mb-4" />
-          <p className="font-bold text-[var(--text)]">Cargando sesión...</p>
+          <p className="font-bold text-[var(--text)]">{t.loadingSession}</p>
         </div>
       </div>
     );
@@ -101,9 +107,9 @@ export default function SessionPage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
         <div className="neo-card p-8 text-center animate-scale-in">
-          <p className="font-bold text-[var(--text)] mb-4">Sesión no encontrada</p>
+          <p className="font-bold text-[var(--text)] mb-4">{t.sessionNotFound}</p>
           <button onClick={() => router.push('/')} className="neo-btn px-4 py-2">
-            Volver al inicio
+            {t.backToHome}
           </button>
         </div>
       </div>
@@ -122,7 +128,7 @@ export default function SessionPage() {
             <button
               onClick={() => router.push('/')}
               className="neo-btn-ghost px-2 py-1 text-sm"
-              aria-label="Volver al inicio"
+              aria-label={t.backToHome}
             >
               ←
             </button>
@@ -130,19 +136,19 @@ export default function SessionPage() {
             <div>
               <p className="font-black text-[var(--text)] text-sm leading-tight">SocraticGemma</p>
               <p className="text-xs text-[var(--muted)]">
-                {session.stimulus.title || 'Sesión'}
+                {session.stimulus.title || t.sessionFallbackTitle}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[var(--muted)] hidden sm:block">
-              Turno {assistantTurnCount} / {session.total_turns}
+              {lang === 'en' ? 'Turn' : 'Turno'} {assistantTurnCount} / {session.total_turns}
             </span>
             <button
               onClick={() => { reset(); router.push(`/report/${sessionId}`); }}
               className="neo-btn px-3 py-1.5 text-xs"
             >
-              🗺️ Perfil
+              {t.profileButton}
             </button>
           </div>
         </div>
@@ -152,7 +158,7 @@ export default function SessionPage() {
       <div className="max-w-4xl mx-auto w-full px-4 pt-4">
         <div className="neo-card bg-[var(--accent-bg)] p-4">
           <p className="text-xs font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-300 mb-1">
-            💬 Pregunta inicial
+            {t.initialQuestionLabel}
           </p>
           <p className="text-[var(--text)] font-medium">{session.stimulus.content}</p>
         </div>
@@ -184,20 +190,23 @@ export default function SessionPage() {
         >
           <div className="max-w-4xl mx-auto px-4 py-5">
             <p className="text-center font-black text-[var(--text)] mb-4">
-              🏁 Has llegado al límite de {session.total_turns + extraTurns} turnos
+              {lang === 'en'
+                ? `🏁 You have reached the limit of ${session.total_turns + extraTurns} turns`
+                : `🏁 Has llegado al límite de ${session.total_turns + extraTurns} turnos`
+              }
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => { reset(); router.push(`/report/${sessionId}`); }}
                 className="neo-btn px-6 py-3 text-base"
               >
-                🗺️ Ver perfil filosófico
+                {t.viewPhilosophicalProfile}
               </button>
               <button
                 onClick={() => setExtraTurns((n) => n + 5)}
                 className="neo-btn-ghost px-6 py-3 text-base"
               >
-                ➕ Continuar 5 turnos más
+                {t.continueMoreTurns}
               </button>
             </div>
 
@@ -219,7 +228,7 @@ export default function SessionPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribe tu respuesta..."
+              placeholder={t.inputPlaceholder}
               disabled={status === 'streaming' || status === 'connecting'}
               className="neo-input flex-1 px-4 py-3 resize-none"
               rows={1}
@@ -240,12 +249,12 @@ export default function SessionPage() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : (
-                'Enviar'
+                t.sendButton
               )}
             </button>
           </div>
           <p className="text-xs text-[var(--muted)] mt-2 text-center">
-            Enter para enviar · Shift+Enter para nueva línea
+            {t.inputHint}
           </p>
         </div>
       </div>
