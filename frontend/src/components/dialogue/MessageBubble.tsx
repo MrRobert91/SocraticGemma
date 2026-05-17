@@ -7,11 +7,13 @@ interface MessageBubbleProps {
   turn: Turn;
   isStreaming?: boolean;
   streamingContent?: string;
+  lang?: string;
 }
 
-export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBubbleProps) {
+export function MessageBubble({ turn, isStreaming, streamingContent, lang }: MessageBubbleProps) {
   const isChild = turn.role === 'child';
   const content = isStreaming && !isChild ? streamingContent : turn.content;
+  const userLabel = lang === 'en' ? '👤 User' : '👤 Usuario';
 
   return (
     <div className={`flex ${isChild ? 'justify-end' : 'justify-start'} animate-fade-up`}>
@@ -28,7 +30,7 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
               : 'text-[var(--text)]'
           }`}
         >
-          {isChild ? '👤 Usuario' : '🤖 SocraticGemma'}
+          {isChild ? userLabel : '🤖 SocraticGemma'}
         </div>
 
         {/* Message bubble */}
@@ -48,7 +50,7 @@ export function MessageBubble({ turn, isStreaming, streamingContent }: MessageBu
         {/* Question type tag */}
         {!isChild && turn.question_type && (
           <div className="mt-0.5">
-            <QTypeTag type={turn.question_type} />
+            <QTypeTag type={turn.question_type} lang={lang} />
           </div>
         )}
 

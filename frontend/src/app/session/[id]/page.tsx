@@ -170,6 +170,7 @@ export default function SessionPage() {
           turns={session.turns}
           isStreaming={status === 'streaming' || status === 'connecting'}
           streamingContent={tokens}
+          lang={lang}
         />
       </div>
 

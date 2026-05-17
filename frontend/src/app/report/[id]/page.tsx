@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useReport } from '@/hooks/useReport';
 import { useSession } from '@/hooks/useSession';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { useLang } from '@/hooks/useLang';
+import { getTranslations } from '@/lib/i18n';
+import type { LangCode } from '@/lib/i18n';
 
 // Used ONLY by the "Imprimir / PDF" button — generates the static HTML body
 // embedded in the new print window. Display uses <MarkdownContent /> instead.
@@ -32,16 +35,25 @@ export default function ReportPage() {
   const reportRef = useRef<HTMLDivElement>(null);
   const { getSession } = useSession();
   const [sessionTitle, setSessionTitle] = useState<string>('');
+  const uiLang = useLang();
+  const [sessionLang, setSessionLang] = useState<LangCode | null>(null);
+  const lang: LangCode = sessionLang ?? uiLang;
+  const t = getTranslations(lang);
 
   // On mount: try to load existing report
   useEffect(() => {
     loadReport(sessionId);
   }, [sessionId, loadReport]);
 
-  // Fetch session stimulus title for PDF filename
+  // Fetch session stimulus title and language
   useEffect(() => {
     getSession(sessionId).then((s) => {
-      if (s) setSessionTitle(s.stimulus?.title || s.stimulus?.content?.slice(0, 60) || '');
+      if (s) {
+        setSessionTitle(s.stimulus?.title || s.stimulus?.content?.slice(0, 60) || '');
+        if (s.language === 'en' || s.language === 'es') {
+          setSessionLang(s.language as LangCode);
+        }
+      }
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
@@ -51,13 +63,17 @@ export default function ReportPage() {
     const reportHtml = markdownToPrintHtml(content);
     const now = new Date();
     const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
-    const docTitle = sessionTitle ? `${sessionTitle} - ${stamp}` : `Perfil Filosófico - ${stamp}`;
+    const docTitle = sessionTitle ? `${sessionTitle} - ${stamp}` : `${t.philosophicalProfileTitle} - ${stamp}`;
     const w = window.open('', '_blank', 'width=900,height=700');
     if (!w) {
-      alert('Tu navegador bloqué la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.');
+      alert(lang === 'en'
+        ? 'Your browser blocked the pop-up. Please allow pop-ups for this site and try again.'
+        : 'Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio e inténtalo de nuevo.'
+      );
       return;
     }
-    w.document.write(`<!DOCTYPE html><html lang="es">
+    const htmlLang = lang === 'en' ? 'en' : 'es';
+    w.document.write(`<!DOCTYPE html><html lang="${htmlLang}">`;
 <head>
   <meta charset="utf-8">
   <title>${docTitle}</title>
@@ -80,7 +96,7 @@ export default function ReportPage() {
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
-  }, [content, sessionTitle]);
+  }, [content, sessionTitle, lang, t]);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
@@ -94,17 +110,17 @@ export default function ReportPage() {
             <button
               onClick={() => router.push(`/session/${sessionId}`)}
               className="neo-btn-ghost px-2 py-1 text-lg font-bold"
-              aria-label="Volver"
+              aria-label={t.reportBackSession}
             >
               ←
             </button>
             <span className="text-2xl" aria-hidden="true">🗺️</span>
-            <h1 className="font-black text-[var(--text)]">Perfil Filosófico</h1>
+            <h1 className="font-black text-[var(--text)]">{t.philosophicalProfileTitle}</h1>
           </div>
           <div className="flex items-center gap-2">
             {status === 'complete' && content && (
               <button onClick={handleDownloadPdf} className="neo-btn px-3 py-1.5 text-sm">
-                🖨️ Imprimir / PDF
+                {t.reportPrint}
               </button>
             )}
           </div>
@@ -117,17 +133,16 @@ export default function ReportPage() {
           <div className="text-center py-20 animate-scale-in">
             <p className="text-6xl mb-6">🗺️</p>
             <h2 className="text-2xl font-black text-[var(--text)] mb-3">
-              Tu mapa filosófico
+              {t.reportPageTitle}
             </h2>
             <p className="text-[var(--muted)] mb-8 max-w-md mx-auto">
-              Genera un informe personalizado basado en tu conversación: qué corrientes filosóficas
-              resuenan contigo, cuáles son tus puntos ciegos, y qué caminos explorar.
+              {t.reportDesc}
             </p>
             <button
               onClick={() => generateReport(sessionId)}
               className="neo-btn px-8 py-4 text-lg"
             >
-              ✨ Generar informe filosófico
+              {t.reportGenerate}
             </button>
           </div>
         )}
@@ -138,7 +153,7 @@ export default function ReportPage() {
             {status === 'loading' && (
               <div className="text-center py-12">
                 <div className="animate-spin h-12 w-12 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-4" />
-                <p className="font-semibold text-[var(--muted)]">Analizando la conversación...</p>
+                <p className="font-semibold text-[var(--muted)]">{t.reportAnalyzing}</p>
               </div>
             )}
             {content && (
@@ -155,7 +170,7 @@ export default function ReportPage() {
           <div className="neo-card bg-rose-100 p-8 text-center text-rose-800">
             <p className="font-bold mb-4">{error}</p>
             <button onClick={() => generateReport(sessionId)} className="neo-btn px-6 py-3">
-              Reintentar
+              {t.retryButton}
             </button>
           </div>
         )}
@@ -172,10 +187,10 @@ export default function ReportPage() {
                 onClick={() => generateReport(sessionId)}
                 className="neo-btn-ghost px-5 py-2 text-sm"
               >
-                🔄 Regenerar informe
+                {t.reportRegenerate}
               </button>
               <button onClick={handleDownloadPdf} className="neo-btn px-5 py-2 text-sm">
-                🖨️ Imprimir / PDF
+                {t.reportPrint}
               </button>
             </div>
           </div>

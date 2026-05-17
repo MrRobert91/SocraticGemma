@@ -8,9 +8,10 @@ interface ChatWindowProps {
   turns: Turn[];
   isStreaming?: boolean;
   streamingContent?: string;
+  lang?: string;
 }
 
-export function ChatWindow({ turns, isStreaming, streamingContent }: ChatWindowProps) {
+export function ChatWindow({ turns, isStreaming, streamingContent, lang }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function ChatWindow({ turns, isStreaming, streamingContent }: ChatWindowP
           turn={turn}
           isStreaming={isStreaming && index === turns.length}
           streamingContent={streamingContent}
+          lang={lang}
         />
       ))}
       {isStreaming && (
@@ -35,6 +37,7 @@ export function ChatWindow({ turns, isStreaming, streamingContent }: ChatWindowP
           turn={{ role: 'assistant', content: '' }}
           isStreaming={true}
           streamingContent={streamingContent}
+          lang={lang}
         />
       )}
       <div ref={bottomRef} />

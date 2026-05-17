@@ -130,6 +130,14 @@ export interface UITranslations {
   confirmDeleteConversation: string;
   errorLoadConversation: string;
   deleteErrorAlert: string;
+  // Report page
+  reportPageTitle: string;
+  reportDesc: string;
+  reportGenerate: string;
+  reportAnalyzing: string;
+  reportRegenerate: string;
+  reportPrint: string;
+  reportBackSession: string;
 }
 
 // ─── UI Translations ──────────────────────────────────────────────────────────
@@ -261,6 +269,13 @@ const T: Record<LangCode, UITranslations> = {
     confirmDeleteConversation: '¿Eliminar esta conversación? Esta acción no se puede deshacer.',
     errorLoadConversation: 'No se pudo cargar la conversación',
     deleteErrorAlert: 'No se pudo eliminar la conversación. Inténtalo de nuevo.',
+    reportPageTitle: 'Tu mapa filosófico',
+    reportDesc: 'Genera un informe personalizado basado en tu conversación: qué corrientes filosóficas resuenan contigo, cuáles son tus puntos ciegos, y qué caminos explorar.',
+    reportGenerate: '✨ Generar informe filosófico',
+    reportAnalyzing: 'Analizando la conversación...',
+    reportRegenerate: '🔄 Regenerar informe',
+    reportPrint: '🖨️ Imprimir / PDF',
+    reportBackSession: 'Volver',
   },
 
   en: {
@@ -388,6 +403,13 @@ const T: Record<LangCode, UITranslations> = {
     confirmDeleteConversation: 'Delete this conversation? This action cannot be undone.',
     errorLoadConversation: 'Could not load the conversation',
     deleteErrorAlert: 'Could not delete the conversation. Please try again.',
+    reportPageTitle: 'Your philosophical map',
+    reportDesc: 'Generate a personalised report based on your conversation: which philosophical streams resonate with you, your blind spots, and paths to explore.',
+    reportGenerate: '✨ Generate philosophical report',
+    reportAnalyzing: 'Analysing the conversation...',
+    reportRegenerate: '🔄 Regenerate report',
+    reportPrint: '🖨️ Print / PDF',
+    reportBackSession: 'Back',
   },
 };
 

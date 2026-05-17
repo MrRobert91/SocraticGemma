@@ -1,11 +1,12 @@
 'use client';
 
-import { QuestionType, QUESTION_TYPE_LABELS } from '@/lib/types';
+import { QuestionType, QUESTION_TYPE_LABELS, getQuestionTypeLabel } from '@/lib/types';
 import { Tooltip } from '@/components/Tooltip';
 
 interface QTypeTagProps {
   type: QuestionType;
   size?: 'sm' | 'md';
+  lang?: string;
 }
 
 const NEO_COLORS: Record<QuestionType, string> = {
@@ -19,7 +20,7 @@ const NEO_COLORS: Record<QuestionType, string> = {
   statement:     'bg-gray-200   text-gray-900',
 };
 
-const DESCRIPTIONS: Record<QuestionType, string> = {
+const DESCRIPTIONS_ES: Record<QuestionType, string> = {
   conceptual:    'Explora el significado de un concepto o idea',
   assumption:    'Cuestiona los supuestos implícitos en una afirmación',
   evidence:      'Pide justificación o evidencia para una idea',
@@ -30,12 +31,24 @@ const DESCRIPTIONS: Record<QuestionType, string> = {
   statement:     'Afirmación (no es una pregunta)',
 };
 
-export function QTypeTag({ type, size = 'sm' }: QTypeTagProps) {
+const DESCRIPTIONS_EN: Record<QuestionType, string> = {
+  conceptual:    'Explores the meaning of a concept or idea',
+  assumption:    'Challenges the implicit assumptions in a statement',
+  evidence:      'Asks for justification or evidence for an idea',
+  perspective:   'Invites consideration of other points of view',
+  implication:   'Explores the consequences of an idea',
+  metacognitive: 'Reflects on the thinking process itself',
+  opening:       'Opens up exploration of a new topic',
+  statement:     'Statement (not a question)',
+};
+
+export function QTypeTag({ type, size = 'sm', lang }: QTypeTagProps) {
   const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1';
+  const descriptions = lang === 'en' ? DESCRIPTIONS_EN : DESCRIPTIONS_ES;
   return (
-    <Tooltip content={DESCRIPTIONS[type]} side="top">
+    <Tooltip content={descriptions[type]} side="top">
       <span className={`neo-tag ${NEO_COLORS[type]} ${sizeClasses}`}>
-        {QUESTION_TYPE_LABELS[type]}
+        {getQuestionTypeLabel(type, lang ?? 'es')}
       </span>
     </Tooltip>
   );
