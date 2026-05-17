@@ -289,25 +289,28 @@ body {
   overflow: hidden;
 }
 
-/* ─── Mobile sizing (≤ 640px) ──────────────────────────────── */
-@media (max-width: 640px) {
+/* ─── Mobile sizing (≤ 768px) ──────────────────────────────── */
+@media (max-width: 768px) {
   /* Escala todas las unidades rem ~25%: 16px → 20px base */
   html { font-size: 125%; }
 
-  /* Botones — mínimo 60px de alto para targets táctiles (WCAG ≥48px) */
+  /* Botones — mínimo 55px de alto para targets táctiles (≥44px) */
   .neo-btn,
   .neo-btn-ghost,
-  .neo-btn-danger { min-height: 3rem; }
+  .neo-btn-danger { min-height: 2.75rem; }
 
   /* Toggle / selector buttons */
   .neo-toggle-on,
   .neo-toggle-off { min-height: 2.75rem; }
 
-  /* Inputs — font-size ≥16px previene auto-zoom en iOS */
+  /* Inputs y selects — font-size ≥16px previene auto-zoom en iOS */
   .neo-input,
-  .neo-select { font-size: 1rem; }
+  .neo-select {
+    font-size: 1rem;
+    min-height: 2.75rem;
+  }
 
-  /* Labels — pasan de 11px a 17px */
+  /* Labels — pasan de 11px a ~17px */
   .neo-label {
     font-size: 0.85rem;
     letter-spacing: 0.08em;
