@@ -18,6 +18,16 @@ import {
   Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCenter,
+  forceCollide,
+  SimulationNodeDatum,
+  SimulationLinkDatum,
+  Simulation,
+} from 'd3-force';
 
 import { useWikiGraph, useWikiPage, useWikiStatus } from '@/hooks/useWiki';
 import { WikiNode } from '@/lib/types';
@@ -58,6 +68,20 @@ function readStoredPanelWidth(): number {
 
 function stripFrontmatter(md: string): string {
   return md.replace(/^---[\s\S]*?---\s*/m, '').trim();
+}
+
+// ─── D3 force simulation types ────────────────────────────────────────────────
+
+interface SimNode extends SimulationNodeDatum {
+  id: string;
+  wiki: WikiNode;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface SimLink extends SimulationLinkDatum<SimNode> {}
+
+function nodeRadius(wiki: WikiNode): number {
+  return wiki.category === 'profile' ? 44 : Math.max(18, 18 + wiki.session_count * 4);
 }
 
 // ─── Custom node ──────────────────────────────────────────────────────────────
@@ -283,43 +307,102 @@ function SlidePanel({ slug, width, onClose, onSelectSlug, onWidthChange }: Slide
   );
 }
 
-// ─── Layout helpers ───────────────────────────────────────────────────────────
+// ─── D3 force simulation hook ─────────────────────────────────────────────────
 
-function layoutNodes(wikiNodes: WikiNode[]): Node[] {
-  // The profile node sits in the centre as the hub; everyone else radiates
-  // out so its many outgoing edges fan out instead of crossing the canvas.
-  const profile = wikiNodes.find((n) => n.category === 'profile');
-  const others = wikiNodes.filter((n) => n.category !== 'profile');
-  const n = others.length;
-  const radius = Math.max(220, n * 34);
-  const cx = 400;
-  const cy = 300;
-  const PROFILE_SIZE = 88;
-  const OTHER_SIZE_BASE = 36;
+function useForceSimulation(
+  graph: { nodes: WikiNode[]; edges: { source: string; target: string; relation: string; weight: number }[] } | null,
+  setNodes: (updater: (nds: Node[]) => Node[]) => void,
+) {
+  const simulationRef = useRef<Simulation<SimNode, SimLink> | null>(null);
+  const simNodeMap = useRef<Map<string, SimNode>>(new Map());
+  const draggingId = useRef<string | null>(null);
 
-  const out: Node[] = [];
-  if (profile) {
-    out.push({
-      id: profile.id,
-      type: 'wiki',
-      position: { x: cx - PROFILE_SIZE / 2, y: cy - PROFILE_SIZE / 2 },
-      data: { ...profile, selected: false },
+  useEffect(() => {
+    if (!graph) return;
+
+    simulationRef.current?.stop();
+
+    const cx = 400;
+    const cy = 300;
+
+    const simNodes: SimNode[] = graph.nodes.map(wiki => {
+      const prev = simNodeMap.current.get(wiki.id);
+      return {
+        id: wiki.id,
+        wiki,
+        x: prev?.x ?? cx + (Math.random() - 0.5) * 300,
+        y: prev?.y ?? cy + (Math.random() - 0.5) * 300,
+        vx: prev?.vx ?? 0,
+        vy: prev?.vy ?? 0,
+      };
     });
-  }
-  others.forEach((node, i) => {
-    const angle = (2 * Math.PI * i) / Math.max(n, 1);
-    const halfSize = (OTHER_SIZE_BASE + node.session_count * 8) / 2;
-    out.push({
-      id: node.id,
-      type: 'wiki',
-      position: {
-        x: cx + radius * Math.cos(angle) - halfSize,
-        y: cy + radius * Math.sin(angle) - halfSize,
-      },
-      data: { ...node, selected: false },
-    });
-  });
-  return out;
+
+    const nodeById = new Map(simNodes.map(n => [n.id, n]));
+    simNodeMap.current = nodeById;
+
+    const simLinks: SimLink[] = graph.edges
+      .filter(e => nodeById.has(e.source) && nodeById.has(e.target))
+      .map(e => ({ source: e.source, target: e.target }));
+
+    const sim = forceSimulation<SimNode>(simNodes)
+      // Connected nodes attract each other — the core of Obsidian clustering
+      .force(
+        'link',
+        forceLink<SimNode, SimLink>(simLinks)
+          .id(d => d.id)
+          .distance(110)
+          .strength(0.4),
+      )
+      // All nodes repel each other, spreading clusters apart
+      .force('charge', forceManyBody<SimNode>().strength(-180).distanceMax(500))
+      // Gentle center gravity so the graph doesn't drift off screen
+      .force('center', forceCenter<SimNode>(cx, cy).strength(0.04))
+      // Collision prevents overlap; radius proportional to visual node size
+      .force('collide', forceCollide<SimNode>(d => nodeRadius(d.wiki) + 12).strength(0.7))
+      .alphaDecay(0.02)
+      .on('tick', () => {
+        setNodes(nds =>
+          nds.map(rfNode => {
+            if (rfNode.id === draggingId.current) return rfNode;
+            const sim = nodeById.get(rfNode.id);
+            if (!sim) return rfNode;
+            const r = nodeRadius(sim.wiki);
+            return { ...rfNode, position: { x: (sim.x ?? 0) - r, y: (sim.y ?? 0) - r } };
+          }),
+        );
+      });
+
+    simulationRef.current = sim;
+    return () => {
+      sim.stop();
+    };
+    // We deliberately depend only on `graph` — `setNodes` is stable from useNodesState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graph]);
+
+  const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+    draggingId.current = node.id;
+    const sim = simNodeMap.current.get(node.id);
+    if (sim) { sim.fx = sim.x; sim.fy = sim.y; }
+    simulationRef.current?.alphaTarget(0.3).restart();
+  }, []);
+
+  const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
+    const sim = simNodeMap.current.get(node.id);
+    if (!sim) return;
+    const r = nodeRadius(sim.wiki);
+    sim.fx = node.position.x + r;
+    sim.fy = node.position.y + r;
+  }, []);
+
+  const onNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
+    draggingId.current = null;
+    const sim = simNodeMap.current.get(node.id);
+    if (sim) { sim.fx = null; sim.fy = null; }
+    simulationRef.current?.alphaTarget(0);
+  }, []);
+
+  return { onNodeDragStart, onNodeDrag, onNodeDragStop };
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -377,15 +460,23 @@ function WikiGraphInner() {
     }
   }, [refetchGraph]);
 
-  // useNodesState only initialises once. Without the effect below the canvas
-  // stays empty forever because the graph hook loads asynchronously and the
-  // initial flowNodes/flowEdges are `[]`.
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
+  const { onNodeDragStart, onNodeDrag, onNodeDragStop } = useForceSimulation(graph, setNodes);
+
+  // Initialise ReactFlow nodes and edges when graph data arrives.
+  // The D3 simulation (created inside useForceSimulation) drives positions from here on.
   useEffect(() => {
     if (!graph) return;
-    setNodes(layoutNodes(graph.nodes));
+    setNodes(
+      graph.nodes.map(wiki => ({
+        id: wiki.id,
+        type: 'wiki',
+        position: { x: 400 + (Math.random() - 0.5) * 300, y: 300 + (Math.random() - 0.5) * 300 },
+        data: { ...wiki, selected: false },
+      })),
+    );
     setEdges(
       graph.edges.map(e => ({
         id: `${e.source}-${e.target}`,
@@ -524,6 +615,9 @@ function WikiGraphInner() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={onNodeClick}
+              onNodeDragStart={onNodeDragStart}
+              onNodeDrag={onNodeDrag}
+              onNodeDragStop={onNodeDragStop}
               nodeTypes={nodeTypes}
               fitView
               fitViewOptions={{ padding: 0.3 }}
