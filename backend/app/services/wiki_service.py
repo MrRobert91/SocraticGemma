@@ -331,17 +331,19 @@ Analiza la siguiente transcripción de un diálogo filosófico socrático y extr
 {report}
 
 ---
+IMPORTANTE: El idioma de salida debe ser "{language}".{slug_lang_note}
+
 Responde SOLO con un objeto JSON válido con esta estructura (sin texto adicional fuera del JSON):
 {{
-  "topics": ["lista de temas filosóficos tratados, slugificados en el idioma del usuario (ej: libre-albedrio, justicia)"],
-  "topic_titles": {{"slug": "Título Legible"}},
-  "streams": ["corrientes filosóficas mencionadas o relevantes, slugificadas"],
-  "stream_titles": {{"slug": "Título Legible"}},
-  "user_positions": {{"slug-tema": "postura o pregunta del usuario en 1-2 frases"}},
-  "open_questions": ["preguntas que quedaron sin respuesta"],
-  "contradictions": ["tensiones o contradicciones detectadas en el razonamiento del usuario"],
-  "book_recommendations": ["Título — Autor (1 frase de por qué)"],
-  "profile_keywords": ["3-6 palabras clave que resumen el estilo filosófico del usuario"]
+  "topics": ["lista de temas filosóficos tratados, slugificados en el idioma de la sesión ({slug_example_topics})"],
+  "topic_titles": {{"slug": "Título Legible en el idioma de la sesión"}},
+  "streams": ["corrientes filosóficas mencionadas o relevantes, slugificadas ({slug_example_streams})"],
+  "stream_titles": {{"slug": "Título Legible en el idioma de la sesión"}},
+  "user_positions": {{"slug-tema": "postura o pregunta del usuario en 1-2 frases en el idioma de la sesión"}},
+  "open_questions": ["preguntas que quedaron sin respuesta, en el idioma de la sesión"],
+  "contradictions": ["tensiones o contradicciones detectadas en el razonamiento del usuario, en el idioma de la sesión"],
+  "book_recommendations": ["Title — Author (1 sentence explaining why, in the session language)"],
+  "profile_keywords": ["3-6 palabras/words clave que resumen el estilo filosófico del usuario, en el idioma de la sesión"]
 }}
 """
 
@@ -366,6 +368,31 @@ _TOPIC_TEMPLATE = """\
 
 ## Conexiones con otros temas
 [[topic-slug-otro]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
+_TOPIC_TEMPLATE_EN = """\
+## Your Position
+[User's stance or questions on this topic, integrating this session and previous ones. 3-6 sentences.]
+
+## Evolution of Thought
+[How the user's view on this topic has changed across sessions that touch it. If first appearance, note it briefly.]
+
+## Key Ideas Explored
+[Central concepts discussed. Bullet list with hyphens.]
+
+## Tensions and Open Questions
+[Detected contradictions or unanswered questions. Bullet list with hyphens.]
+
+## Related Streams
+[[stream-slug-1]], [[stream-slug-2]]
+
+## Relevant Readings
+[[reading-slug-1]], [[reading-slug-2]]
+
+## Connections with Other Topics
+[[other-topic-slug]]
 
 <!-- backlinks:start -->
 <!-- backlinks:end -->"""
@@ -395,6 +422,31 @@ _STREAM_TEMPLATE = """\
 <!-- backlinks:start -->
 <!-- backlinks:end -->"""
 
+_STREAM_TEMPLATE_EN = """\
+## Definition
+[What this philosophical school of thought is, neutral and objective. 3-5 lines.]
+
+## Core Ideas
+[3-6 fundamental theses. Bullet list with hyphens.]
+
+## Key Thinkers
+[Brief list without external links.]
+
+## Why It Interests You
+[Specific connection with the user's thinking, based on observations from their conversations. 4-6 lines maximum. Consolidate, do not accumulate.]
+
+## User's Topics That Touch This Stream
+[[topic-slug-1]], [[topic-slug-2]]
+
+## Recommended Readings
+[[reading-slug-1]]
+
+## Related or Opposing Streams
+[[other-stream-slug]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
 _READING_TEMPLATE = """\
 ## Autoría
 [Autor], [año], [idioma original si es relevante]
@@ -413,6 +465,32 @@ _READING_TEMPLATE = """\
 
 <!-- backlinks:start -->
 <!-- backlinks:end -->"""
+
+_READING_TEMPLATE_EN = """\
+## Authorship
+[Author], [year], [original language if relevant]
+
+## Summary
+[2-3 sentences about the content of the book/essay.]
+
+## Why Read It
+[Specific connection to what the user has discussed in their conversations.]
+
+## Related Topics
+[[topic-slug-1]], [[topic-slug-2]]
+
+## Represented Streams
+[[stream-slug-1]]
+
+<!-- backlinks:start -->
+<!-- backlinks:end -->"""
+
+
+def _get_page_templates(lang: str) -> tuple[str, str, str]:
+    """Return (topic_template, stream_template, reading_template) for the given language."""
+    if lang == "en":
+        return _TOPIC_TEMPLATE_EN, _STREAM_TEMPLATE_EN, _READING_TEMPLATE_EN
+    return _TOPIC_TEMPLATE, _STREAM_TEMPLATE, _READING_TEMPLATE
 
 
 _SYNTHESIS_PROMPT_TEMPLATE = """\
@@ -612,21 +690,34 @@ def _plan_pages_from_extraction(
     return {"create": create, "update": update}
 
 
-def _build_pages_brief(user_id: str, plan: dict) -> str:
+def _build_pages_brief(user_id: str, plan: dict, language: str = "es") -> str:
     """Build the per-page brief block of the synthesis prompt.
 
     For UPDATE pages, includes the current content so the LLM can preserve it.
     """
     lines: list[str] = []
 
+    if language == "en":
+        new_header = "### NEW PAGES (to create from scratch, use the template for their category):\n"
+        update_header = "### EXISTING PAGES (to update — preserve + integrate, do NOT overwrite):\n"
+        current_content_label = "  CURRENT CONTENT:\n"
+        truncated_label = "\n… [truncated]"
+        nothing_label = "(nothing to generate)"
+    else:
+        new_header = "### Páginas NUEVAS (a crear desde cero, usa la plantilla de su categoría):\n"
+        update_header = "### Páginas EXISTENTES (a actualizar — preserva + integra, NO sobreescribas):\n"
+        current_content_label = "  CONTENIDO ACTUAL:\n"
+        truncated_label = "\n… [truncado]"
+        nothing_label = "(nada que generar)"
+
     if plan["create"]:
-        lines.append("### Páginas NUEVAS (a crear desde cero, usa la plantilla de su categoría):\n")
+        lines.append(new_header)
         for p in plan["create"]:
             lines.append(f"- NEW  category={p['category']}  slug={p['slug']}  title={p['title']!r}")
         lines.append("")
 
     if plan["update"]:
-        lines.append("### Páginas EXISTENTES (a actualizar — preserva + integra, NO sobreescribas):\n")
+        lines.append(update_header)
         for p in plan["update"]:
             slug = p["slug"]
             existing = read_page(user_id, slug, p["category"]) or ""
@@ -635,14 +726,14 @@ def _build_pages_brief(user_id: str, plan: dict) -> str:
             existing = _BACKLINK_BLOCK_RE.sub("", existing).strip()
             # Cap to avoid prompt bloat
             if len(existing) > 1500:
-                existing = existing[:1500] + "\n… [truncado]"
+                existing = existing[:1500] + truncated_label
             lines.append(
                 f"- UPDATE  category={p['category']}  slug={p['slug']}  title={p['title']!r}\n"
-                f"  CONTENIDO ACTUAL:\n"
+                f"{current_content_label}"
                 f"  ```markdown\n  {existing.replace(chr(10), chr(10) + '  ')}\n  ```\n"
             )
 
-    return "\n".join(lines) if lines else "(nada que generar)"
+    return "\n".join(lines) if lines else nothing_label
 
 
 async def _write_and_register_page(
@@ -678,6 +769,7 @@ async def _create_orphan_stubs(
     session_id: str,
     written_slugs: set[str],
     now: float,
+    language: str = "es",
 ) -> int:
     """Scan all user pages for [[refs]] that have no page; create stubs.
 
@@ -704,13 +796,22 @@ async def _create_orphan_stubs(
         # Heuristic category from slug shape — fallback to 'topic'.
         category = _guess_category_from_slug(slug)
         title = slug.replace("-", " ").capitalize()
-        content = (
-            f"## Pendiente de exploración\n\n"
-            f"Este nodo apareció referenciado desde otra página pero todavía no se ha "
-            f"profundizado en él en ninguna conversación. Cuando hables sobre este "
-            f"tema, esta página se enriquecerá automáticamente.\n\n"
-            f"<!-- backlinks:start -->\n<!-- backlinks:end -->"
-        )
+        if language == "en":
+            content = (
+                f"## Pending Exploration\n\n"
+                f"This node appeared as a reference from another page but has not yet "
+                f"been explored in any conversation. When you discuss this topic, "
+                f"this page will be enriched automatically.\n\n"
+                f"<!-- backlinks:start -->\n<!-- backlinks:end -->"
+            )
+        else:
+            content = (
+                f"## Pendiente de exploración\n\n"
+                f"Este nodo apareció referenciado desde otra página pero todavía no se ha "
+                f"profundizado en él en ninguna conversación. Cuando hables sobre este "
+                f"tema, esta página se enriquecerá automáticamente.\n\n"
+                f"<!-- backlinks:start -->\n<!-- backlinks:end -->"
+            )
         await _write_and_register_page(
             user_id=user_id,
             session_id=session_id,
@@ -799,25 +900,30 @@ async def synthesize_global_profile(user_id: str, language: str = "es") -> bool:
         )
 
     # ── Build reports block ───────────────────────────────────────────
+    _no_title = "(no title)" if language == "en" else "(sin título)"
+    _no_profile = "(none yet)" if language == "en" else "(ninguno todavía)"
+    _no_pages = "(no pages yet)" if language == "en" else "(ninguna página aún)"
+    _session_label = "Session" if language == "en" else "Sesión"
+
     reports_block_parts: list[str] = []
     for r in reports:
-        title = r["stimulus_title"] or r["stimulus_content"][:60] or "(sin título)"
+        title = r["stimulus_title"] or r["stimulus_content"][:60] or _no_title
         # Cap each report to avoid prompt explosion
         content = (r["content"] or "")[:2500]
         reports_block_parts.append(
-            f"### Sesión: {title}\n(created_at={r['created_at']})\n\n{content}\n"
+            f"### {_session_label}: {title}\n(created_at={r['created_at']})\n\n{content}\n"
         )
     reports_block = "\n---\n".join(reports_block_parts)
 
     # ── Load previous profile ─────────────────────────────────────────
-    previous_profile = read_page(user_id, "_profile", "profile") or "(ninguno todavía)"
+    previous_profile = read_page(user_id, "_profile", "profile") or _no_profile
     previous_profile = re.sub(r"^---.*?---\s*", "", previous_profile, flags=re.DOTALL).strip()
-    previous_profile = _BACKLINK_BLOCK_RE.sub("", previous_profile).strip() or "(ninguno todavía)"
+    previous_profile = _BACKLINK_BLOCK_RE.sub("", previous_profile).strip() or _no_profile
 
     existing_pages = await list_wiki_pages(user_id)
     known_slugs = ", ".join(
         f"[[{p['slug']}]]" for p in existing_pages if p["slug"] != "_profile"
-    ) or "(ninguna página aún)"
+    ) or _no_pages
 
     prompt = _GLOBAL_PROFILE_PROMPT_TEMPLATE.format(
         mode_note=mode_note,
@@ -920,6 +1026,19 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
 
         # ── STEP 1/6: Extraction LLM ──────────────────────────────────
         logger.info("[WIKI] STEP 1/6 — extraction LLM call (LLM #1)")
+        if language == "en":
+            slug_lang_note = (
+                "\nSlugs MUST be in English (e.g., free-will, justice, epistemology, "
+                "social-contract). Do NOT use Spanish words for slugs. "
+                "All text fields (positions, questions, titles, etc.) must be in English."
+            )
+            slug_example_topics = "free-will, justice, personal-identity"
+            slug_example_streams = "existentialism, stoicism, kantian-ethics"
+        else:
+            slug_lang_note = ""
+            slug_example_topics = "libre-albedrio, justicia, identidad-personal"
+            slug_example_streams = "existencialismo, estoicismo, etica-kantiana"
+
         extraction_prompt = _EXTRACTION_PROMPT_TEMPLATE.format(
             age_group=session_data["age_group"],
             language=language,
@@ -927,6 +1046,9 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             stimulus_content=stimulus.get("content", ""),
             transcript=transcript,
             report=report[:2000],
+            slug_lang_note=slug_lang_note,
+            slug_example_topics=slug_example_topics,
+            slug_example_streams=slug_example_streams,
         )
         logger.info("[WIKI]   extraction prompt: %d chars", len(extraction_prompt))
         extraction = await _llm_call_json(
@@ -971,7 +1093,7 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             return
 
         # Build per-page briefs (with existing content for UPDATE pages).
-        pages_brief = _build_pages_brief(user_id, plan)
+        pages_brief = _build_pages_brief(user_id, plan, language)
         known_slugs_list = sorted(
             set(existing_by_slug.keys())
             | {p["slug"] for p in plan["create"]}
@@ -980,14 +1102,15 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
 
         # ── STEP 3/6: Content synthesis LLM ───────────────────────────
         logger.info("[WIKI] STEP 3/6 — content synthesis LLM call (LLM #2)")
+        topic_tmpl, stream_tmpl, reading_tmpl = _get_page_templates(language)
         synthesis_prompt = _SYNTHESIS_PROMPT_TEMPLATE.format(
             extraction=json.dumps(extraction, ensure_ascii=False, indent=2),
             pages_brief=pages_brief,
-            known_slugs=", ".join(f"[[{s}]]" for s in known_slugs_list) or "(ninguno aún)",
+            known_slugs=", ".join(f"[[{s}]]" for s in known_slugs_list) or ("(none yet)" if language == "en" else "(ninguno aún)"),
             language=language,
-            topic_template=_TOPIC_TEMPLATE,
-            stream_template=_STREAM_TEMPLATE,
-            reading_template=_READING_TEMPLATE,
+            topic_template=topic_tmpl,
+            stream_template=stream_tmpl,
+            reading_template=reading_tmpl,
         )
         logger.info("[WIKI]   synthesis prompt: %d chars", len(synthesis_prompt))
         synthesis = await _llm_call_json(
@@ -1052,6 +1175,7 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
             session_id=session_id,
             written_slugs=set(pages_created) | set(pages_updated) | set(existing_by_slug.keys()),
             now=now,
+            language=language,
         )
 
         logger.info(
