@@ -1194,12 +1194,12 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
 
         # ── STEP 5/6: Sync edges + regenerate backlinks ───────────────
         logger.info("[WIKI] STEP 5/6 — sync edges + regenerate backlinks")
-        backlinks_rewritten = await sync_graph_edges(user_id, language)
+        backlinks_rewritten = await sync_graph_edges(user_id, preferred_language)
         logger.info("[WIKI]   backlinks_blocks_rewritten=%d", backlinks_rewritten)
 
         # ── STEP 6/6: Global profile synthesis (LLM #3) ───────────────
         logger.info("[WIKI] STEP 6/6 — global profile synthesis (LLM #3)")
-        await synthesize_global_profile(user_id, language)
+        await synthesize_global_profile(user_id, preferred_language)
 
         # ── Final edge sync ────────────────────────────────────────────
         # Belt-and-suspenders: sync_graph_edges is also called inside
@@ -1207,7 +1207,7 @@ async def synthesize_wiki_update(user_id: str, session_id: str, preferred_langua
         # _profile's outgoing edges are always current regardless of the
         # code path taken inside synthesize_global_profile (e.g. early
         # return in incremental-mode when profile was already up-to-date).
-        final_edges = await sync_graph_edges(user_id, language)
+        final_edges = await sync_graph_edges(user_id, preferred_language)
         logger.info("[WIKI]   final edge sync: backlinks_rewritten=%d", final_edges)
 
         elapsed = time.time() - start_ts
