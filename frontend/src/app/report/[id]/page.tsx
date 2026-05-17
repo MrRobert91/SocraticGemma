@@ -73,7 +73,7 @@ export default function ReportPage() {
       return;
     }
     const htmlLang = lang === 'en' ? 'en' : 'es';
-    w.document.write(`<!DOCTYPE html><html lang="${htmlLang}">`;
+    w.document.write(`<!DOCTYPE html><html lang="${htmlLang}">
 <head>
   <meta charset="utf-8">
   <title>${docTitle}</title>
