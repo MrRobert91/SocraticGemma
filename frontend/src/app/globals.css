@@ -290,35 +290,48 @@ body {
 }
 
 /* ─── Mobile sizing (≤ 768px) ──────────────────────────────── */
-@media (max-width: 768px) {
-  /* Escala todas las unidades rem ~25%: 16px → 20px base */
-  html { font-size: 125%; }
+@media screen and (max-width: 768px) {
+  /* Sube el rem base de 16 → 20px. !important para evitar conflictos
+     con resets de Tailwind v4 o proxies intermedios. */
+  html { font-size: 125% !important; }
 
-  /* Botones — mínimo 55px de alto para targets táctiles (≥44px) */
+  /* Botones — mínimo 44px de alto (Apple HIG / WCAG).
+     Usamos px además de rem por si el escalado del html no aplica. */
   .neo-btn,
   .neo-btn-ghost,
-  .neo-btn-danger { min-height: 2.75rem; }
+  .neo-btn-danger {
+    min-height: 2.75rem;
+    min-height: 44px; /* fallback px */
+  }
 
   /* Toggle / selector buttons */
   .neo-toggle-on,
-  .neo-toggle-off { min-height: 2.75rem; }
+  .neo-toggle-off {
+    min-height: 2.75rem;
+    min-height: 44px;
+  }
 
   /* Inputs y selects — font-size ≥16px previene auto-zoom en iOS */
   .neo-input,
   .neo-select {
     font-size: 1rem;
+    font-size: 16px;  /* fallback px */
     min-height: 2.75rem;
+    min-height: 44px;
   }
 
-  /* Labels — pasan de 11px a ~17px */
+  /* Labels */
   .neo-label {
     font-size: 0.85rem;
+    font-size: 14px;
     letter-spacing: 0.08em;
   }
 
-  /* Tags / badges — más legibles */
+  /* Tags / badges */
   .neo-tag {
     font-size: 0.8rem;
+    font-size: 13px;
     padding: 0.25rem 0.5rem;
+    padding: 4px 8px;
   }
 }
