@@ -16,7 +16,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-[Live Demo](https://socraticgemma-js7p6v.sliplane.app) · [API Docs](https://socraticgemma-js7p6v.sliplane.app/docs) · [Track: AI for Education & Cognitive Resilience](#hackathon-track)
+[Live Demo](https://socraticgemma-js7p6v.sliplane.app) · [API Docs](https://socraticgemma-js7p6v.sliplane.app/docs) · [Track: Future of Education](#hackathon-track)
 
 </div>
 
@@ -40,7 +40,7 @@ It works for children from age 6, teenagers, and adults who want to develop rigo
 
 ## Hackathon Track
 
-This project competes in **Gemma 4 Good** under the **Education & Cognitive Resilience** axis:
+This project competes in **Gemma 4 Good** under the **Future of Education** track:
 
 | Impact axis | How we address it |
 |---|---|
