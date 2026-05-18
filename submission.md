@@ -192,22 +192,6 @@ Your data is stored locally in SQLite and plain Markdown — portable, human-rea
 
 ---
 
-### Evaluation Scoring
-
-Each model turn is scored across 5 dimensions (1–5 scale) with weights:
-
-| Dimension | Weight | What it measures |
-|:---|:---:|---|
-| Socratism | 30% | Does it ask instead of answer? Does it deepen inquiry? |
-| Age-appropriateness | 17.5% | Correct vocabulary and abstraction level? |
-| Construction | 17.5% | Does it build on the user's previous response? |
-| Openness | 17.5% | Does it admit multiple valid answers? |
-| Advancement | 17.5% | Does it move the inquiry forward? |
-
-The Compare mode runs the same input through both the Socratic prompt and a standard helpful-assistant baseline, returning side-by-side scores — useful as a pedagogical demonstration tool.
-
----
-
 ### Challenges Overcome
 
 **1. Reliable JSON output from a generative model.** Gemma 4 must output `{question, question_type, thinking}` on every turn. We implemented retry logic, streaming JSON parsers, and the output format layer explicitly constrains the structure.

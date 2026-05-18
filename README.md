@@ -2,9 +2,9 @@
 
 # SocraticGemma
 
-### **La IA que pregunta en lugar de responder.**
+### **The AI that asks instead of answers.**
 
-*Un compañero socrático que entrena tu pensamiento crítico, no lo sustituye.*
+*A Socratic companion that trains your critical thinking — it doesn't replace it.*
 
 ![Hackathon](https://img.shields.io/badge/Hackathon-Gemma%204%20Good-FFB000?style=for-the-badge)
 ![Built with Gemma](https://img.shields.io/badge/Built%20with-Google%20Gemma%204-4285F4?style=for-the-badge&logo=google)
@@ -16,165 +16,178 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-[Demo en vivo](https://socraticgemma-js7p6v.sliplane.app) · [Documentación API](https://socraticgemma-js7p6v.sliplane.app/docs) · [Categoría: AI for Education & Cognitive Resilience](#-categoría-del-hackathon)
+[Live Demo](https://socraticgemma-js7p6v.sliplane.app) · [API Docs](https://socraticgemma-js7p6v.sliplane.app/docs) · [Track: AI for Education & Cognitive Resilience](#hackathon-track)
 
 </div>
 
 ---
 
-## El problema
+## The Problem
 
-La mayoría de asistentes de IA están optimizados para una sola cosa: **darte la respuesta lo más rápido posible**. Eso es maravilloso para tareas mecánicas, pero está erosionando silenciosamente la habilidad más importante que tenemos: **pensar por nosotros mismos**.
+Most AI assistants are optimized for one thing: **giving you the right answer as fast as possible**. That is great for mechanical tasks, but it is silently eroding the most important skill we have: **thinking for ourselves**.
 
-Estudios recientes (MIT, 2025; Microsoft Research, 2024) muestran que el uso intensivo de LLMs reduce la activación cerebral asociada al razonamiento independiente, especialmente en niños y adolescentes en edad de desarrollo cognitivo. Cuando el modelo piensa por ti, tu cerebro deja de hacerlo.
+Recent studies (MIT 2025; Microsoft Research 2024) show that intensive LLM use reduces brain activation associated with independent reasoning — especially in children and adolescents during critical cognitive development windows. When the model thinks for you, your brain stops doing it.
 
-## Nuestra propuesta
+## Our Approach
 
-**SocraticGemma invierte el patrón.** En lugar de darte respuestas, te devuelve preguntas — del tipo correcto, en el momento correcto, adaptadas a tu edad y a tu nivel de razonamiento. Implementa la metodología **Philosophy for Children (P4C)**, validada en pedagogía durante 40 años, usando **Google Gemma 4** como motor de facilitación socrática.
+**SocraticGemma inverts the pattern.** Instead of giving answers, it returns questions — the right kind, at the right moment, adapted to the user's age and reasoning level. It uses **Google Gemma 4** as a Socratic facilitation engine grounded in the same principles Socrates described: surface assumptions, test beliefs, keep inquiry open.
 
-> No es un tutor que sabe la respuesta. Es un compañero que sabe **qué preguntar** para que tú descubras la tuya.
+> It is not a tutor that knows the answer. It is a companion that knows **what to ask** so you discover it yourself.
 
-Funciona para niños desde 6 años, adolescentes, y adultos buscando entrenar pensamiento filosófico riguroso. Cada sesión termina con un **informe filosófico personalizado** y enriquece un **wiki personal** que mapea la evolución de tu pensamiento a lo largo del tiempo.
+It works for children from age 6, teenagers, and adults who want to develop rigorous philosophical thinking. Every session ends with a **personalised philosophical report** and feeds into a **personal wiki** that maps the evolution of your thinking over time.
 
 ---
 
-## Categoría del hackathon
+## Hackathon Track
 
-Este proyecto compite en **Gemma 4 Good** dentro del eje de **Educación y Resiliencia Cognitiva**:
+This project competes in **Gemma 4 Good** under the **Education & Cognitive Resilience** axis:
 
-| Eje de impacto | Cómo lo abordamos |
+| Impact axis | How we address it |
 |---|---|
-| **Aprendizaje adaptativo** | Prompts diferenciados por franja de edad (6-8, 9-12, 13-16, adultos) con vocabulario y abstracción calibrados |
-| **Bienestar mental y autonomía** | Diseñado para preservar la metacognición y prevenir la "atrofia cognitiva por IA" |
-| **Accesibilidad democrática** | Soporte multi-idioma (ES/EN), open source MIT, desplegable en cualquier hardware con Docker |
-| **Privacidad por diseño** | Datos persistidos localmente en SQLite; wikis exportables en Markdown (compatibles con Obsidian) |
-| **Pedagogía basada en evidencia** | Implementa P4C, marco con 40 años de literatura académica y resultados medibles en razonamiento crítico |
+| **Adaptive learning** | Age-specific prompts (6-8, 9-12, 13-16, adults) with calibrated vocabulary and abstraction |
+| **Mental wellbeing and autonomy** | Designed to preserve metacognition and prevent AI-induced cognitive atrophy |
+| **Democratic accessibility** | Multi-language (ES/EN), MIT open source, deployable on any hardware with Docker |
+| **Privacy by design** | Data persisted locally in SQLite; wikis exportable as Markdown (Obsidian-compatible) |
 
 ---
 
-## Demo en vivo
+## Live Demo
 
 **[socraticgemma-js7p6v.sliplane.app](https://socraticgemma-js7p6v.sliplane.app)**
 
-Puedes empezar sin registrarte: elige una edad, escribe una pregunta filosófica, y conversa. Si te registras, además guardamos tu historial y construimos tu **wiki filosófico personal**.
+You can start without registering: choose an age, write a philosophical question, and start talking. If you register, your history is saved and your **personal philosophy wiki** is built automatically.
 
 ---
 
-## Características
+## Features
 
-### Diálogo socrático adaptativo
+### Adaptive Socratic dialogue
 
-- **Cuatro franjas de edad** con prompts dedicados: 6-8, 9-12, 13-16, adultos
-- **Tres formatos de estímulo**: pregunta abierta, escenario / dilema ético, historia
-- **Duración configurable**: de 5 a 50 turnos por sesión
-- **Streaming en tiempo real** con SSE (Server-Sent Events)
-- **Razonamiento visible**: muestra el "thinking trace" del modelo para transparencia pedagógica
+- **Four age ranges** with dedicated prompts: 6-8, 9-12, 13-16, adults
+- **Three stimulus formats**: open question, ethical scenario / dilemma, story
+- **Configurable length**: 5 to 50 turns per session
+- **Real-time streaming** via SSE (Server-Sent Events)
+- **Visible reasoning**: the model's `thinking` trace is shown to the user for pedagogical transparency
 
-### Motor socrático de 8 capas
+### The 8-layer prompt engine
 
-Cada turno construye un prompt estructurado en capas, lo que garantiza coherencia, diversidad y rigor sin que el modelo "improvise":
+Each dialogue turn builds a structured prompt across 8 layers — this guarantees coherence, variety, and rigour without the model improvising:
 
 ```
-LAYER 1   Identidad sistémica + instrucción de progreso de sesión
-LAYER 2   Guías de comunicación específicas por edad
-LAYER 3   Reglas de comportamientos prohibidos (con ejemplos MAL/BIEN)
-LAYER 4   Rotación inteligente entre 7 tipos de pregunta P4C
-LAYER 5   Movimientos RAG opcionales (literatura P4C indexada)
-LAYER 6   Historia del diálogo + estímulo inicial
-LAYER 7   Formato de salida JSON estructurado
-LAYER 8   Perfil filosófico del usuario (sesiones anteriores) ← personalización
+LAYER 1   System identity + phase-aware session progress instruction
+LAYER 2   Age-specific communication guidelines
+LAYER 3   Forbidden behaviour rules with explicit BAD/GOOD examples
+LAYER 4   Intelligent rotation across 7 Socratic question types
+LAYER 5   Resumed session context — prior history injected when continuing a past dialogue
+LAYER 6   Full dialogue history + initial stimulus
+LAYER 7   Structured JSON output format
+LAYER 8   User's global philosophical profile ← personalisation from accumulated thinking
 ```
 
-### Los 7 tipos de pregunta P4C
+The session also progresses through 5 phases (`stimulus → questions → agenda → inquiry → synthesis`), with different instructions per phase based on % of session remaining.
 
-| Tipo | Función | Ejemplo |
+### The 7 Socratic question types
+
+| Type | Function | Example |
 |---|---|---|
-| **Conceptual** | Clarificar significado | *"¿Qué quieres decir con 'justicia'?"* |
-| **Supuesto** | Examinar presupuestos | *"¿Qué estás asumiendo cuando dices eso?"* |
-| **Evidencia** | Evaluar razones | *"¿Qué te hace pensar eso?"* |
-| **Perspectiva** | Otras miradas | *"¿Cómo lo vería alguien que no está de acuerdo?"* |
-| **Implicación** | Explorar consecuencias | *"¿Qué pasaría si todos pensaran así?"* |
-| **Metacognitivo** | Pensar sobre pensar | *"¿Qué tipo de pregunta es esa?"* |
-| **Apertura** | Nuevas posibilidades | *"¿Qué más te hace pensar esto?"* |
+| **Conceptual** | Clarify meaning | *"What do you mean by 'justice'?"* |
+| **Assumption** | Surface presuppositions | *"What are you assuming when you say that?"* |
+| **Evidence** | Evaluate reasons | *"What makes you think so?"* |
+| **Perspective** | Other viewpoints | *"How would someone who disagrees see this?"* |
+| **Implication** | Explore consequences | *"What would happen if everyone thought this way?"* |
+| **Metacognitive** | Think about thinking | *"What kind of question is that?"* |
+| **Opening** | New possibilities | *"What else does this make you think about?"* |
 
-El motor **rota automáticamente** los tipos, evitando que el modelo se quede atrapado pidiendo siempre "evidencia" o "supuestos".
+The engine **rotates automatically** through types, preventing the model from getting stuck asking only for "evidence" or "assumptions".
 
-### Comportamientos prohibidos — el guardarraíl ético
+### Forbidden behaviour guardrails
 
-El modelo es entrenado explícitamente para evitar cinco antipatrones documentados en la literatura P4C:
+The model is explicitly trained to avoid five anti-patterns that undermine genuine inquiry:
 
-| Comportamiento | Por qué importa |
+| Behaviour | Why it matters |
 |---|---|
-| **Overhelp** | "Exactamente, lo entendiste perfectamente" → cierra el pensamiento |
-| **Lecture** | Explicar conceptos que el participante no pidió → modo "profesor" |
-| **Correct** | "En realidad eso no es así" → mata la curiosidad |
-| **Leading** | Preguntas que dirigen a una respuesta predeterminada |
-| **Close** | Respuestas rápidas que cierran la indagación |
+| **Overhelp** | "Exactly right, you got it!" → closes down thinking |
+| **Lecture** | Explaining concepts the user didn't ask for → teacher mode |
+| **Correct** | "Actually that's not quite right" → kills curiosity |
+| **Leading** | Questions that point to a predetermined answer |
+| **Close** | Quick answers that shut down inquiry |
 
-Un evaluador automático separado **detecta y puntúa** estos comportamientos al final de cada sesión.
+A separate evaluator LLM **detects and scores** these behaviours at the end of each session — providing measurable proof that the model is facilitating thinking rather than replacing it.
 
-### Informe filosófico personalizado
+### Per-session philosophical report
 
-Al terminar una sesión, un segundo LLM analiza toda la conversación y genera un **informe en markdown** con 7 secciones:
+At the end of every session, a second Gemma 4 call analyses the full conversation and generates a Markdown report with 7 sections:
 
-1. **Mapa filosófico** — resumen y arco de la conversación
-2. **Creencias y posiciones detectadas** — qué intuiciones expresaste
-3. **Corrientes afines** — empirismo, estoicismo, existencialismo, etc.
-4. **Tu estilo de razonamiento** — concreto vs abstracto, intuitivo vs analítico
-5. **Pensadores que podrían interesarte** — lecturas recomendadas con justificación
-6. **Puntos ciegos** — perspectivas que no exploraste
-7. **Caminos para seguir explorando** — preguntas nuevas y experimentos mentales
+1. **Philosophical map** — summary and arc of the conversation
+2. **Detected beliefs and positions** — what intuitions the user expressed
+3. **Related currents** — empiricism, stoicism, existentialism, etc.
+4. **Reasoning style** — concrete vs abstract, intuitive vs analytical
+5. **Thinkers to explore** — recommended readings with justification
+6. **Blind spots** — perspectives that were not explored
+7. **Paths to continue** — new questions and thought experiments
 
-Es como salir de una sesión con un terapeuta filosófico que tomó notas.
+### Personal philosophy wiki
 
-### Wiki filosófico personal
+> *The standout feature — and unique in its category.*
 
-> *La función estrella, y única en su categoría.*
+Each session automatically feeds a **living knowledge graph** that grows with the user's thinking.
 
-Cada sesión alimenta automáticamente un **wiki personal** que evoluciona con tu pensamiento:
+**Connected notes, auto-generated**
+Every conversation produces or updates Markdown pages per philosophical topic (free will, justice, identity, consciousness…) and per school of thought (stoicism, Kantianism, pragmatism…). Pages link to each other with `[[wiki-style]]` backlinks. After ten conversations, you have an interconnected map of your own mind.
 
-- **Páginas auto-generadas** por tema filosófico tratado (libre albedrío, justicia, identidad…)
-- **Páginas de corrientes** (estoicismo, kantianismo, pragmatismo…) enlazadas a tus temas
-- **Grafo de conocimiento navegable** con React Flow — visualiza las conexiones entre tus ideas
-- **Perfil filosófico evolutivo** (`_profile.md`) que sintetiza tu estilo, corrientes predominantes, contradicciones detectadas
-- **Inyección en futuros prompts**: las próximas sesiones consultan tu wiki para personalizar las preguntas
-- **Export Obsidian-compatible** en ZIP con frontmatter YAML y enlaces `[[wiki-style]]`
+**Interactive graph view**
+The full wiki is rendered as a navigable force graph using React Flow. You can explore which ideas cluster together, which are isolated, and which are in visible tension with each other — all at a glance.
 
-Tus datos te pertenecen — puedes llevártelos en cualquier momento.
+**Global evolving profile**
+Across all sessions, a synthesised `_profile.md` accumulates: your dominant philosophical currents, recurring themes, detected contradictions between conversations, and how your thinking has shifted over time. This profile is injected into every new session prompt so Gemma can ask increasingly personal and challenging questions.
 
-### Modo comparación
+**Smart stimulus suggestions**
+The system reads your knowledge graph and proposes new conversation starters targeted at:
+- Topics you have raised but never gone deep on
+- Ideas that appear in tension with each other across different sessions
+- Unexplored angles adjacent to your strongest interests
 
-¿Cómo cambia la conversación si en lugar del enfoque socrático usaras un asistente helpful estándar? El endpoint `/compare` ejecuta el mismo input por ambos prompts y devuelve las puntuaciones lado a lado. Es la mejor herramienta de demostración pedagógica que existe.
+This turns the wiki from a passive archive into an active thinking partner.
 
-### Multi-idioma y autenticación
+**Continue past conversations**
+Any prior dialogue can be resumed. The full session history and your accumulated profile are re-injected into the prompt so Gemma picks up exactly where you left off — no repetition, no reset.
 
-- **i18n** en español e inglés (la mayoría de prompts y la UI completa)
-- **Auth con JWT + cookies httpOnly**, contraseñas con bcrypt
-- **Preferencias persistidas** por usuario (idioma, historial completo de sesiones)
-- **Modo invitado** funcional para demo rápida sin registrarse
+**Obsidian-compatible export**
+Download your entire wiki as a ZIP of Markdown files with YAML frontmatter and `[[wiki-style]]` backlinks. Open the folder in Obsidian and your philosophical knowledge graph is immediately navigable in your own tools, with zero reformatting. Your data is stored locally — portable, human-readable, no vendor lock-in.
+
+### Compare mode
+
+How does the conversation change if you use a standard helpful assistant instead of the Socratic approach? The `/compare` endpoint runs the same input through both prompts and returns scores side by side — useful as a pedagogical demonstration tool.
+
+### Multi-language and authentication
+
+- **i18n** in Spanish and English (UI and most prompts)
+- **JWT auth + httpOnly cookies**, passwords with bcrypt
+- **Persisted preferences** per user (language, full session history)
+- **Guest mode** for quick demos without registering
 
 ---
 
-## Cómo funciona
+## How it works
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                          USUARIO (niño/adulto)                          │
+│                            USER (child / adult)                         │
 └─────────────────────────────────┬──────────────────────────────────────┘
-                                  │ pregunta filosófica
+                                  │ philosophical question
                                   ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                     FRONTEND  (Next.js 16 · React Flow)                 │
-│           setup → diálogo SSE → informe → wiki + grafo                  │
+│                    FRONTEND  (Next.js 16 · React Flow)                  │
+│          setup → SSE dialogue → report → wiki + graph                   │
 └─────────────────────────────────┬──────────────────────────────────────┘
                                   │ HTTP / SSE
                                   ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        BACKEND  (FastAPI · async)                       │
+│                       BACKEND  (FastAPI · async)                        │
 │                                                                          │
 │   ┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
 │   │ SocraticEngine  │───▶│  PromptBuilder   │───▶│  GemmaClient     │  │
-│   │ (orquestador)   │    │  (8 capas)       │    │  (OpenRouter)    │  │
+│   │ (orchestrator)  │    │  (8 layers)      │    │  (OpenRouter)    │  │
 │   └────────┬────────┘    └──────────────────┘    └────────┬─────────┘  │
 │            │                                                │            │
 │            │             ┌──────────────────┐               │            │
@@ -183,115 +196,110 @@ Tus datos te pertenecen — puedes llevártelos en cualquier momento.
 │            │             └──────────────────┘               │            │
 │            │                                                │            │
 │            │             ┌──────────────────┐               │            │
-│            ├────────────▶│   RAG (Chroma)   │ optional      │            │
-│            │             └──────────────────┘               │            │
-│            │                                                │            │
-│            │             ┌──────────────────┐               │            │
-│            └────────────▶│   ReportService  │───────────────┤            │
-│                          │   + WikiService  │               │            │
-│                          └────────┬─────────┘               │            │
-│                                   │                          │            │
-│                          ┌────────▼─────────┐    ┌──────────▼─────────┐ │
+│            └────────────▶│  ReportService   │───────────────┘            │
+│                          │  + WikiService   │                            │
+│                          └────────┬─────────┘                            │
+│                                   │                                      │
+│                          ┌────────▼─────────┐    ┌────────────────────┐ │
 │                          │   SQLite (DB)    │    │  Markdown (wiki)   │ │
 │                          │  users/sessions  │    │  _profile.md +     │ │
-│                          │  turns/reports   │    │  topics/streams    │ │
+│                          │  turns/reports   │    │  topics/schools    │ │
 │                          └──────────────────┘    └────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────┘
                                   ▲
                                   │
                           ┌───────┴────────┐
-                          │  Google Gemma  │
-                          │   (vía OpenR.) │
+                          │  Google Gemma 4 │
+                          │  (OpenRouter)  │
                           └────────────────┘
 ```
 
-### El ciclo de una sesión
+### Session lifecycle
 
-1. **Setup** — el usuario elige edad, estímulo (pregunta/escenario/historia), duración y opciones avanzadas (RAG, modo razonamiento visible).
-2. **Diálogo** — cada turno construye el prompt de 8 capas, lo envía a Gemma con streaming, parsea la respuesta JSON `{question, question_type, thinking}` y la entrega al frontend vía SSE.
-3. **Progresión por fases** — el motor reconoce 5 fases (`stimulus → questions → agenda → inquiry → synthesis`) y ajusta la instrucción según el % de sesión restante.
-4. **Evaluación batch** — al final, un LLM evaluador puntúa cada turno en 5 dimensiones y detecta comportamientos prohibidos.
-5. **Informe** — segundo LLM genera el informe filosófico personalizado en markdown vía streaming.
-6. **Síntesis wiki** (usuarios registrados) — dos llamadas LLM en background:
-   - **Extracción**: estructura los temas, corrientes, posiciones, contradicciones
-   - **Síntesis**: genera/actualiza las páginas markdown del wiki y reconstruye el grafo
+1. **Setup** — user picks age range, stimulus type (question / scenario / story), session length, and whether to show the thinking trace.
+2. **Dialogue** — each turn builds the 8-layer prompt, sends it to Gemma with streaming, parses the JSON response `{question, question_type, thinking}`, and delivers it to the frontend via SSE.
+3. **Phase progression** — the engine recognises 5 phases (`stimulus → questions → agenda → inquiry → synthesis`) and adjusts instructions based on % of session remaining.
+4. **Batch evaluation** — at the end, an evaluator LLM scores each turn across 5 dimensions and flags any forbidden behaviours.
+5. **Report** — a second Gemma 4 call generates the personalised philosophical report in Markdown via streaming.
+6. **Wiki synthesis** (registered users) — two background LLM calls:
+   - **Extraction**: structures topics, schools of thought, positions, contradictions, and recommended thinkers into JSON
+   - **Synthesis**: creates or patches Markdown wiki pages and rebuilds the knowledge graph
 
 ---
 
-## Criterios de evaluación
+## Evaluation scoring
 
-Cada turno del modelo se puntúa en 5 dimensiones (1-5), con ponderación:
+Each model turn is scored across 5 dimensions (1–5 scale) with weights:
 
-| Dimensión | Peso | Qué mide |
+| Dimension | Weight | What it measures |
 |---|:---:|---|
-| **Socratismo** | 30% | ¿Pregunta en lugar de responder? ¿Profundiza? |
-| **Adecuación a la edad** | 17.5% | ¿Vocabulario y abstracción apropiados? |
-| **Construcción** | 17.5% | ¿Conecta con la respuesta previa del usuario? |
-| **Apertura** | 17.5% | ¿Admite múltiples respuestas válidas? |
-| **Avance** | 17.5% | ¿Mueve la indagación hacia adelante? |
+| **Socratism** | 30% | Does it ask instead of answer? Does it deepen inquiry? |
+| **Age-appropriateness** | 17.5% | Correct vocabulary and abstraction level? |
+| **Construction** | 17.5% | Does it build on the user's previous response? |
+| **Openness** | 17.5% | Does it admit multiple valid answers? |
+| **Advancement** | 17.5% | Does it move the inquiry forward? |
 
 ---
 
-## Stack técnico
+## Tech stack
 
 ### Backend
 
-| Componente | Tecnología | Por qué |
+| Component | Technology | Why |
 |---|---|---|
-| Runtime | Python 3.11+ async | Streaming SSE concurrente sin bloquear |
-| API | FastAPI 0.109 | Type-safety + OpenAPI auto + WebSockets ready |
-| LLM | Google Gemma 4 (vía OpenRouter) | Acceso flexible, modelo fast (`gemma-4-e2b-it`) + accurate (`gemma-4-27b-it`) |
-| Persistencia | SQLite + aiosqlite | Cero-config, embebible, exportable |
-| Auth | JWT + bcrypt + cookies httpOnly | Estándar industria, seguro por defecto |
-| RAG (opcional) | ChromaDB | Búsqueda semántica sobre movimientos P4C |
-| Streaming | sse-starlette | SSE nativo, sin WebSockets innecesarios |
+| Runtime | Python 3.11+ async | Concurrent SSE streaming without blocking |
+| API | FastAPI 0.109 | Type-safety + auto OpenAPI + async-native |
+| LLM | Google Gemma 4 (via OpenRouter) | Fast variant (`gemma-4-e2b-it`) + accurate variant (`gemma-4-27b-it`) |
+| Persistence | SQLite + aiosqlite | Zero-config, embeddable, exportable |
+| Auth | JWT + bcrypt + httpOnly cookies | Industry standard, secure by default |
+| Streaming | sse-starlette | Native SSE, no unnecessary WebSockets |
 | Wiki storage | Markdown + YAML frontmatter | Portable, Obsidian-compatible, human-readable |
 
 ### Frontend
 
-| Componente | Tecnología |
+| Component | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router) + React 19 |
-| Tipado | TypeScript 5 estricto |
-| Estilos | Tailwind CSS + sistema neo-brutalist propio |
-| Grafo wiki | `@xyflow/react` (React Flow) |
-| Streaming hooks | `EventSource` nativo + hooks custom |
-| i18n | Diccionarios tipados (ES/EN) |
+| Typing | TypeScript 5 strict |
+| Styles | Tailwind CSS + custom neo-brutalist design system |
+| Wiki graph | `@xyflow/react` (React Flow) |
+| Streaming hooks | Native `EventSource` + custom hooks |
+| i18n | Typed dictionaries (ES/EN) |
 
-### Despliegue
+### Deployment
 
-- **Docker Compose** orquesta backend + frontend en una sola red
-- **Healthchecks** integrados
-- **Volúmenes persistentes** para SQLite + wikis de usuario
-- Actualmente en producción en **Sliplane**
+- **Docker Compose** orchestrates backend + frontend in a single network
+- **Integrated healthchecks**
+- **Persistent volumes** for SQLite + user wikis
+- Currently in production on **Sliplane**
 
 ---
 
-## Inicio rápido
+## Quick start
 
-### Con Docker Compose (recomendado)
+### With Docker Compose (recommended)
 
 ```bash
 git clone https://github.com/MrRobert91/SocraticGemma.git
 cd SocraticGemma
 
-# Configurar variables
+# Set environment variables
 cp .env.example .env
-# Edita .env:
+# Edit .env:
 #   OPENROUTER_API_KEY=sk-or-...
-#   JWT_SECRET_KEY=<32+ caracteres aleatorios>
+#   JWT_SECRET_KEY=<32+ random characters>
 
 docker-compose up -d
 
-# Aplicación:
+# Application:
 #   Frontend  → http://localhost:3000
 #   API       → http://localhost:8000
-#   Docs API  → http://localhost:8000/docs
+#   API Docs  → http://localhost:8000/docs
 ```
 
-### Desarrollo local
+### Local development
 
-**Requisitos**: Python 3.11+, Node 20+, una API key de [OpenRouter](https://openrouter.ai)
+**Requirements**: Python 3.11+, Node 20+, an [OpenRouter](https://openrouter.ai) API key
 
 **Backend**
 
@@ -319,67 +327,65 @@ npm run dev
 
 ---
 
-## Endpoints principales
+## Main endpoints
 
-| Método | Endpoint | Función |
+| Method | Endpoint | Function |
 |---|---|---|
-| `POST` | `/auth/register` · `/auth/login` · `/auth/logout` | Gestión de usuarios |
-| `GET`  | `/auth/me` | Usuario actual |
-| `POST` | `/sessions` | Crear sesión socrática |
-| `GET`  | `/sessions/{id}` | Detalle de sesión |
-| `POST` | `/sessions/{id}/turns` | **Turno con streaming SSE** |
-| `POST` | `/sessions/{id}/batch-evaluate` | Evaluación al final |
-| `POST` | `/sessions/{id}/report` | **Informe filosófico (SSE)** |
-| `GET`  | `/conversations` | Histórico paginado del usuario |
-| `GET`  | `/wiki/graph` | Grafo de conocimiento (nodos + aristas) |
-| `GET`  | `/wiki/pages/{slug}` | Página wiki individual |
-| `GET`  | `/wiki/export` | **ZIP Obsidian-compatible** |
-| `POST` | `/wiki/rebuild` | Re-sintetizar wiki completo |
-| `POST` | `/compare` | Comparar baseline vs P4C |
-| `POST` | `/rag/search` · `/rag/index` | Búsqueda RAG de movimientos P4C |
+| `POST` | `/auth/register` · `/auth/login` · `/auth/logout` | User management |
+| `GET`  | `/auth/me` | Current user |
+| `POST` | `/sessions` | Create a Socratic session |
+| `GET`  | `/sessions/{id}` | Session detail |
+| `POST` | `/sessions/{id}/turns` | **Dialogue turn with SSE streaming** |
+| `POST` | `/sessions/{id}/batch-evaluate` | End-of-session evaluation |
+| `POST` | `/sessions/{id}/report` | **Philosophical report (SSE streaming)** |
+| `GET`  | `/conversations` | Paginated user history |
+| `GET`  | `/wiki/graph` | Knowledge graph (nodes + edges) |
+| `GET`  | `/wiki/pages/{slug}` | Individual wiki page |
+| `GET`  | `/wiki/export` | **Obsidian-compatible ZIP export** |
+| `POST` | `/wiki/rebuild` | Re-synthesise full wiki |
+| `POST` | `/compare` | Compare Socratic vs baseline prompt |
 | `GET`  | `/health` | Healthcheck |
 
-Documentación interactiva completa (Swagger UI): **`/docs`**
+Full interactive documentation (Swagger UI): **`/docs`**
 
 ---
 
-## Lo que hace a este proyecto único
+## What makes this project unique
 
-| | Asistentes IA convencionales | **SocraticGemma** |
+| | Conventional AI assistants | **SocraticGemma** |
 |---|---|---|
-| Optimizado para | Velocidad de respuesta | **Profundidad del pensamiento del usuario** |
-| Métrica de éxito | "Te di la respuesta correcta" | **"Te hice pensar"** |
-| Comportamiento | Responder, explicar, corregir | **Preguntar, abrir, esperar** |
-| Personalización | Memoria de hechos sobre ti | **Mapa filosófico que evoluciona** |
-| Tras 100 sesiones | Has consumido información | **Tienes un wiki de tu propio pensamiento** |
-| Privacidad de datos | Servidor del proveedor | **SQLite + markdown locales, exportable** |
-| Edad mínima | 13+ (mayoría) | **Diseñado desde los 6 años** |
-| Marco pedagógico | Ninguno | **P4C, validado durante 40 años** |
+| Optimised for | Speed of response | **Depth of the user's thinking** |
+| Success metric | "I gave you the right answer" | **"I made you think"** |
+| Behaviour | Answer, explain, correct | **Ask, open, wait** |
+| Personalisation | Facts about you | **Evolving philosophical map** |
+| After 100 sessions | You have consumed information | **You have a wiki of your own thought** |
+| Data privacy | Provider's servers | **Local SQLite + Markdown, exportable** |
+| Minimum age | 13+ (most tools) | **Designed from age 6** |
 
 ---
 
 ## Roadmap
 
-- [ ] **Modo voz** con Gemma multimodal — diálogo socrático hablado para edades tempranas
-- [ ] **Modo aula** — sesiones grupales con múltiples participantes
-- [ ] **Métricas longitudinales** — dashboard de evolución del pensamiento crítico
-- [ ] **Integración con plataformas educativas** (Google Classroom, Moodle)
-- [ ] **Gemma on-device** — versión sin servidor para máxima privacidad
-- [ ] **Más idiomas** — catalán, francés, portugués, mandarín
+- [ ] **Voice mode** with Gemma multimodal — spoken Socratic dialogue for younger ages
+- [ ] **Classroom mode** — group sessions with multiple participants
+- [ ] **Longitudinal metrics** — dashboard tracking critical thinking over time
+- [ ] **Educational platform integrations** (Google Classroom, Moodle)
+- [ ] **On-device Gemma** — server-free version for maximum privacy
+- [ ] **More languages** — Catalan, French, Portuguese, Mandarin
 
 ---
 
-## Licencia
+## License
 
-[MIT](LICENSE) — úsalo, modifícalo, despliégalo en tu colegio, hospital, biblioteca pública o donde haga falta sembrar pensamiento crítico.
+[MIT](LICENSE) — use it, modify it, deploy it in your school, hospital, public library, or wherever critical thinking needs planting.
 
 ---
 
 <div align="center">
 
-### *"No pretendo enseñar a nadie nada, sólo hacerles pensar."*
-**— Sócrates**
+### *"I claim to know nothing except the art of asking questions."*
+**— Socrates**
 
-Construido con FastAPI, Next.js, y mucho café — para **Gemma 4 Good**.
+Built with FastAPI, Next.js, and a lot of coffee — for **Gemma 4 Good**.
 
 </div>
