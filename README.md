@@ -8,7 +8,7 @@
 
 ![Hackathon](https://img.shields.io/badge/Hackathon-Gemma%204%20Good-FFB000?style=for-the-badge)
 ![Built with Gemma](https://img.shields.io/badge/Built%20with-Google%20Gemma%204-4285F4?style=for-the-badge&logo=google)
-![License MIT](https://img.shields.io/badge/License-MIT-9333EA?style=for-the-badge)
+![License CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-9333EA?style=for-the-badge)
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)
@@ -46,7 +46,7 @@ This project competes in **Gemma 4 Good** under the **Future of Education** trac
 |---|---|
 | **Adaptive learning** | Age-specific prompts (6-8, 9-12, 13-16, adults) with calibrated vocabulary and abstraction |
 | **Mental wellbeing and autonomy** | Designed to preserve metacognition and prevent AI-induced cognitive atrophy |
-| **Democratic accessibility** | Multi-language (ES/EN), MIT open source, deployable on any hardware with Docker |
+| **Democratic accessibility** | Multi-language (ES/EN), CC BY 4.0 open source, deployable on any hardware with Docker |
 | **Privacy by design** | Data persisted locally in SQLite; wikis exportable as Markdown (Obsidian-compatible) |
 
 ---
@@ -377,7 +377,7 @@ Full interactive documentation (Swagger UI): **`/docs`**
 
 ## License
 
-[MIT](LICENSE) — use it, modify it, deploy it in your school, hospital, public library, or wherever critical thinking needs planting.
+[Creative Commons Attribution 4.0 International](LICENSE) — use it, adapt it, and share it with attribution in your school, hospital, public library, or wherever critical thinking needs planting.
 
 ---
 
